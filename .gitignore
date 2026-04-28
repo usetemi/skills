@@ -1,0 +1,13 @@
+.worktrees/
+.playwright-mcp/
+.DS_Store
+*.swp
+*.swo
+*~
+client_secret*.json
+*.csv.zip
+__pycache__/
+.ruff_cache/
+.venv/
+dist/
+*.egg-info/

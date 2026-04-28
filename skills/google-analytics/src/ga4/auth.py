@@ -1,0 +1,177 @@
+"""Authentication: OAuth 2.0 Desktop flow.
+
+Uses `google-auth-oauthlib`'s `InstalledAppFlow` to obtain a user OAuth token
+against a Desktop OAuth client you create in GCP. Credentials are stored at
+`~/.config/ga4/credentials.json` and auto-refresh via the stored refresh token.
+
+ADC (`gcloud auth application-default login`) is deliberately NOT supported —
+Google is phasing out analytics scopes on the default gcloud client ID, and
+insisting everyone bring their own OAuth client ID for those scopes defeats
+the "easy" story of ADC. Stick with the OAuth flow here; it's one extra step
+up front but stays working.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+
+import click
+import google.auth.exceptions
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+
+from ga4.config import CONFIG_DIR
+
+# Scope sets — callers pass the set they need; the OAuth token must cover them.
+SCOPE_READONLY = "https://www.googleapis.com/auth/analytics.readonly"
+SCOPE_EDIT = "https://www.googleapis.com/auth/analytics.edit"
+SCOPE_MANAGE_USERS = "https://www.googleapis.com/auth/analytics.manage.users"
+SCOPE_PROVISION = "https://www.googleapis.com/auth/analytics.provision"
+SCOPE_USER_DELETION = "https://www.googleapis.com/auth/analytics.user.deletion"
+
+# Default scopes requested at login time if caller doesn't specify.
+DEFAULT_LOGIN_SCOPES = [SCOPE_READONLY, SCOPE_EDIT, SCOPE_MANAGE_USERS]
+
+CREDENTIALS_PATH = CONFIG_DIR / "credentials.json"
+
+
+def _load_credentials(scopes: list[str]) -> Credentials | None:
+    """Load stored OAuth user credentials, refreshing if expired. Returns None if unavailable."""
+    if not CREDENTIALS_PATH.exists():
+        return None
+    try:
+        creds = Credentials.from_authorized_user_file(str(CREDENTIALS_PATH), scopes)
+    except (json.JSONDecodeError, ValueError, KeyError):
+        return None
+    if creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(Request())
+            _save_credentials(creds)
+        except google.auth.exceptions.RefreshError:
+            return None
+    if not creds.valid:
+        return None
+    return creds
+
+
+def _save_credentials(creds: Credentials) -> None:
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CREDENTIALS_PATH.write_text(creds.to_json())
+
+
+def get_credentials(scopes: list[str] | None = None) -> Credentials:
+    """Resolve stored OAuth credentials for the given scope set.
+
+    Raises ClickException with instructions if no valid credentials are available.
+    """
+    scopes = scopes or [SCOPE_READONLY]
+    creds = _load_credentials(scopes)
+    if creds is not None:
+        return creds
+    raise click.ClickException(
+        "No credentials. Run:\n"
+        "  ga4 auth login --client-secret <path-to-oauth-client.json>\n"
+        "Scopes needed for this command: " + ", ".join(scopes),
+    )
+
+
+def _is_headless() -> bool:
+    return not os.environ.get("DISPLAY") and not os.environ.get("BROWSER")
+
+
+@click.group()
+def auth() -> None:
+    """Manage OAuth authentication."""
+
+
+@auth.command()
+@click.option(
+    "--client-secret",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to OAuth client_secret.json (Desktop client from GCP).",
+)
+@click.option("--port", default=8086, help="Local port for OAuth callback.")
+@click.option(
+    "--scope",
+    "scopes",
+    multiple=True,
+    default=DEFAULT_LOGIN_SCOPES,
+    help="OAuth scope. Repeatable. Defaults to readonly + edit + manage-users.",
+)
+def login(client_secret: str, port: int, scopes: tuple[str, ...]) -> None:
+    """Authenticate via OAuth Desktop flow.
+
+    Create a Desktop OAuth client at
+    https://console.cloud.google.com/apis/credentials in any GCP project you
+    control, download the JSON, and point --client-secret at it.
+    """
+    scope_list = list(scopes)
+    if _is_headless():
+        click.echo(
+            "Headless environment detected. Open an SSH tunnel before continuing:\n"
+            f"  ssh -L {port}:localhost:{port} <this-host>\n"
+            "Then open the printed URL on a machine with a browser.",
+            err=True,
+        )
+    flow = InstalledAppFlow.from_client_secrets_file(client_secret, scope_list)
+    creds = flow.run_local_server(port=port, open_browser=not _is_headless())
+    if not isinstance(creds, Credentials):
+        raise click.ClickException(
+            f"Unexpected credential type {type(creds).__name__}; "
+            "expected google.oauth2.credentials.Credentials from a Desktop OAuth client.",
+        )
+    _save_credentials(creds)
+    click.echo(json.dumps({"status": "authenticated", "scopes": scope_list}))
+
+
+@auth.command()
+def logout() -> None:
+    """Remove stored OAuth credentials."""
+    if CREDENTIALS_PATH.exists():
+        CREDENTIALS_PATH.unlink()
+        click.echo(json.dumps({"status": "logged_out"}))
+    else:
+        click.echo(json.dumps({"status": "already_logged_out"}))
+
+
+@auth.command()
+def status() -> None:
+    """Report auth status."""
+    if not CREDENTIALS_PATH.exists():
+        click.echo(json.dumps({"authenticated": False}))
+        return
+    try:
+        creds = Credentials.from_authorized_user_file(str(CREDENTIALS_PATH))
+    except (json.JSONDecodeError, ValueError, KeyError) as exc:
+        click.echo(json.dumps({"authenticated": False, "reason": f"malformed credentials: {exc}"}))
+        return
+    info: dict = {
+        "authenticated": creds.valid or bool(creds.refresh_token),
+        "valid": creds.valid,
+        "scopes": list(creds.scopes or []),
+        "expiry": creds.expiry.isoformat() if creds.expiry else None,
+        "has_refresh_token": bool(creds.refresh_token),
+    }
+    click.echo(json.dumps(info, indent=2))
+
+
+@auth.command()
+def whoami() -> None:
+    """Print the currently authenticated identity and scopes.
+
+    OAuth doesn't expose the user email on the credentials object; this reports
+    what we know — scopes, token validity, expiry.
+    """
+    creds = get_credentials([SCOPE_READONLY])
+    info: dict = {
+        "type": type(creds).__name__,
+        "scopes": list(creds.scopes or []),
+        "expiry": creds.expiry.isoformat() if creds.expiry else None,
+        "has_refresh_token": bool(creds.refresh_token),
+    }
+    if getattr(creds, "quota_project_id", None):
+        info["quota_project"] = creds.quota_project_id
+    click.echo(json.dumps(info, indent=2, default=str))

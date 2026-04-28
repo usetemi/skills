@@ -1,0 +1,50 @@
+"""Service builders and shared utilities."""
+
+from __future__ import annotations
+
+import json
+import sys
+
+import click
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
+from gsc.auth import require_credentials
+
+
+def get_webmasters_service():
+    """Build the webmasters v3 service (analytics, sites, sitemaps)."""
+    return build("webmasters", "v3", credentials=require_credentials())
+
+
+def get_searchconsole_service():
+    """Build the searchconsole v1 service (URL inspection)."""
+    return build("searchconsole", "v1", credentials=require_credentials())
+
+
+def handle_api_error(exc: HttpError) -> None:
+    """Map HttpError to actionable ClickException."""
+    status = exc.resp.status
+    try:
+        detail = json.loads(exc.content).get("error", {}).get("message", str(exc))
+    except (json.JSONDecodeError, AttributeError):
+        detail = str(exc)
+
+    messages = {
+        401: (
+            "Authentication expired. Run: gsc auth login"
+            f" --client-secret <path>\nDetail: {detail}"
+        ),
+        403: (
+            "Permission denied. Verify site ownership in"
+            f" Search Console.\nDetail: {detail}"
+        ),
+        429: (f"Rate limit exceeded. Wait a moment and retry.\nDetail: {detail}"),
+    }
+    raise click.ClickException(messages.get(status, f"API error ({status}): {detail}"))
+
+
+def output_json(data) -> None:
+    """Write JSON to stdout."""
+    json.dump(data, sys.stdout, indent=2, default=str)
+    sys.stdout.write("\n")

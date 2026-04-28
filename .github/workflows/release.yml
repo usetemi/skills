@@ -1,0 +1,33 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  zip-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build per-skill zips
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for skill_dir in skills/*/; do
+            skill_name="$(basename "$skill_dir")"
+            (cd skills && zip -r "../dist/${skill_name}.zip" "$skill_name" \
+              -x "*/.venv/*" "*/.ruff_cache/*" "*/__pycache__/*" "*/dist/*" "*/*.egg-info/*")
+            echo "Built dist/${skill_name}.zip"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true

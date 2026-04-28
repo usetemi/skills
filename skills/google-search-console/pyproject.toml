@@ -1,0 +1,35 @@
+[project]
+name = "gsc"
+version = "0.1.0"
+description = "Google Search Console and PageSpeed Insights CLI"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1",
+    "google-api-python-client>=2.100",
+    "google-auth-oauthlib>=1.2",
+    "google-auth>=2.25",
+]
+
+[project.scripts]
+gsc = "gsc.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gsc"]
+
+[tool.ruff]
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ty.environment]
+root = ["./src"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.2",
+]

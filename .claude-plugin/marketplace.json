@@ -1,0 +1,23 @@
+{
+  "name": "usetemi",
+  "owner": {
+    "name": "Temi"
+  },
+  "metadata": {
+    "description": "Open-source agent skills from Temi (usetemi.com)",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "skills",
+      "description": "Open-source agent skills from Temi for Claude Code, Claude Cowork, Codex, Cursor, and Gemini CLI",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/google-analytics",
+        "./skills/google-drive",
+        "./skills/google-search-console"
+      ]
+    }
+  ]
+}

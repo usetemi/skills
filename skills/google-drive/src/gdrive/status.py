@@ -9,6 +9,39 @@ import click
 from gdrive.manifest import Manifest, compute_md5
 
 
+def _categorize_entries(
+    entries: dict,
+    filter_remote: str | None,
+) -> tuple[list, list, list]:
+    """Bucket tracked entries into (up_to_date, local_newer, missing_locally)."""
+    up_to_date: list = []
+    local_newer: list = []
+    missing_locally: list = []
+    for local_path_str, entry in entries.items():
+        if filter_remote and entry.remote != filter_remote:
+            continue
+        local_path = Path(local_path_str)
+        if not local_path.exists():
+            missing_locally.append((local_path_str, entry))
+            continue
+        if compute_md5(local_path) == entry.local_md5:
+            up_to_date.append((local_path_str, entry))
+        else:
+            local_newer.append((local_path_str, entry))
+    return up_to_date, local_newer, missing_locally
+
+
+def _print_missing_locally(manifest: Manifest, missing_locally: list) -> None:
+    click.echo(f"\nMissing locally ({len(missing_locally)}):")
+    for path, entry in missing_locally:
+        remote_ref = f"{entry.remote}:{entry.remote_path}"
+        click.echo(f"  ! {_short_path(path)}  (was {remote_ref})")
+        matches = manifest.find_by_md5(entry.local_md5)
+        other_matches = [(p, e) for p, e in matches if p != path and Path(p).exists()]
+        if other_matches:
+            click.echo(f"    Possibly moved to: {_short_path(other_matches[0][0])}")
+
+
 @click.command()
 @click.option("--remote", "-r", help="Filter by remote name")
 def status(remote: str | None):
@@ -24,30 +57,8 @@ def status(remote: str | None):
         click.echo("No tracked files. Use 'gdrive pull' to download and track files.")
         return
 
-    # Categorize entries
-    up_to_date = []
-    local_newer = []
-    missing_locally = []
+    up_to_date, local_newer, missing_locally = _categorize_entries(entries, remote)
 
-    for local_path_str, entry in entries.items():
-        if remote and entry.remote != remote:
-            continue
-
-        local_path = Path(local_path_str)
-
-        if not local_path.exists():
-            # Check if file was moved (search by MD5 in common locations)
-            missing_locally.append((local_path_str, entry))
-            continue
-
-        # Compare local MD5 with what we had at sync time
-        current_md5 = compute_md5(local_path)
-        if current_md5 == entry.local_md5:
-            up_to_date.append((local_path_str, entry))
-        else:
-            local_newer.append((local_path_str, entry))
-
-    # Display results
     if up_to_date:
         click.echo(f"\nUp to date ({len(up_to_date)}):")
         for path, entry in up_to_date:
@@ -61,17 +72,7 @@ def status(remote: str | None):
             click.echo(f"  M {_short_path(path)}  ->  {remote_ref}")
 
     if missing_locally:
-        click.echo(f"\nMissing locally ({len(missing_locally)}):")
-        for path, entry in missing_locally:
-            remote_ref = f"{entry.remote}:{entry.remote_path}"
-            click.echo(f"  ! {_short_path(path)}  (was {remote_ref})")
-            # Try to find by MD5
-            matches = manifest.find_by_md5(entry.local_md5)
-            other_matches = [
-                (p, e) for p, e in matches if p != path and Path(p).exists()
-            ]
-            if other_matches:
-                click.echo(f"    Possibly moved to: {_short_path(other_matches[0][0])}")
+        _print_missing_locally(manifest, missing_locally)
 
     if not (local_newer or missing_locally):
         if up_to_date:

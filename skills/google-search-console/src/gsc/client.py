@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import json
 import sys
+from typing import TYPE_CHECKING
 
 import click
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 
 from gsc.auth import require_credentials
+
+if TYPE_CHECKING:
+    from googleapiclient.errors import HttpError
 
 
 def get_webmasters_service():

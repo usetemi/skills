@@ -30,9 +30,9 @@ def _validate_remote(name: str) -> bool:
     """Check if a remote has a working token."""
     try:
         rclone.about(name)
-        return True
     except rclone.RcloneError:
         return False
+    return True
 
 
 def _find_all_drive_remotes() -> list[str]:
@@ -104,6 +104,96 @@ def import_rclone_remotes() -> dict:
     return config
 
 
+def _pick_existing_base_remote(existing: list[str]) -> str | None:
+    """Prompt the user to reuse an existing rclone drive remote, deleting broken ones."""
+    for name in existing:
+        click.echo(f"Found drive remote: {name} ... ", nl=False)
+        if _validate_remote(name):
+            click.echo("OK")
+            if click.confirm(f"Use '{name}' as the base remote?", default=True):
+                return name
+        else:
+            click.echo("broken (invalid token)")
+            if click.confirm(f"Delete broken remote '{name}'?", default=True):
+                try:
+                    rclone.config_delete(name)
+                    click.echo(f"  Deleted {name}")
+                except rclone.RcloneError as exc:
+                    click.echo(f"  Failed to delete: {exc.stderr}")
+    return None
+
+
+def _create_base_remote() -> str:
+    """Prompt for a name, create the rclone drive remote, and run OAuth interactively."""
+    click.echo("\nCreating a new base drive remote.")
+
+    if _is_headless():
+        click.echo(
+            "\nHeadless environment detected. Before proceeding:\n"
+            "  Set up an SSH tunnel from a machine with a browser:\n"
+            "  ssh -L 53682:localhost:53682 <this-host>\n"
+        )
+
+    base_remote = click.prompt("Name for the base remote", default="gdrive")
+
+    click.echo(f"\nCreating remote '{base_remote}'...")
+    try:
+        rclone.config_create(base_remote, "drive", scope="drive")
+    except rclone.RcloneError as exc:
+        raise click.ClickException(f"Failed to create remote: {exc.stderr}") from exc
+
+    click.echo(
+        "\nStarting OAuth. A browser window should open.\n"
+        "Complete the Google sign-in, then answer 'n' to\n"
+        "'Configure this as a Shared Drive?' (we handle that separately).\n"
+    )
+    exit_code = rclone.config_reconnect_interactive(base_remote)
+    if exit_code != 0:
+        click.echo(
+            "\nrclone reconnect exited with an error, but the token "
+            "may have been saved. Checking..."
+        )
+
+    if not _validate_remote(base_remote):
+        raise click.ClickException(
+            f"Remote '{base_remote}' not working after auth. "
+            "Check rclone config and try again."
+        )
+    click.echo(f"Remote '{base_remote}' authenticated successfully.")
+    return base_remote
+
+
+def _enroll_shared_drives(base_remote: str, token: str | None, config: dict) -> None:
+    """List shared drives accessible via base_remote and prompt to register them."""
+    click.echo(f"\nFetching shared drives via '{base_remote}'...")
+    try:
+        drives = rclone.backend_drives(base_remote)
+    except rclone.RcloneError as exc:
+        click.echo(f"Could not list shared drives: {exc.stderr}")
+        return
+
+    if not drives:
+        click.echo("No shared drives found.")
+        return
+
+    click.echo(f"\nFound {len(drives)} shared drive(s):\n")
+    for index, drive in enumerate(drives, 1):
+        click.echo(f"  {index}. {drive['name']} ({drive['id']})")
+
+    click.echo("\n  0. Skip shared drives")
+    selection = click.prompt(
+        "\nSelect drives to enable (comma-separated, e.g. 1,2,3)",
+        default="0",
+    )
+    if selection.strip() == "0":
+        return
+
+    indices = [int(s.strip()) for s in selection.split(",") if s.strip().isdigit()]
+    for index in indices:
+        if 1 <= index <= len(drives):
+            _create_shared_drive_remote(drives[index - 1], token, config)
+
+
 @click.command()
 @click.option(
     "--personal-only",
@@ -119,114 +209,16 @@ def auth(personal_only: bool):
 
     click.echo("Setting up Google Drive access via rclone.\n")
 
-    # Step 1: Find existing base remotes, validate, clean up broken ones
-    base_remote = None
-    existing = _find_all_drive_remotes()
-
-    for name in existing:
-        click.echo(f"Found drive remote: {name} ... ", nl=False)
-        if _validate_remote(name):
-            click.echo("OK")
-            use_it = click.confirm(
-                f"Use '{name}' as the base remote?",
-                default=True,
-            )
-            if use_it:
-                base_remote = name
-                break
-        else:
-            click.echo("broken (invalid token)")
-            if click.confirm(f"Delete broken remote '{name}'?", default=True):
-                try:
-                    rclone.config_delete(name)
-                    click.echo(f"  Deleted {name}")
-                except rclone.RcloneError as exc:
-                    click.echo(f"  Failed to delete: {exc.stderr}")
-
-    # Step 2: Create a new base remote if needed
+    base_remote = _pick_existing_base_remote(_find_all_drive_remotes())
     if not base_remote:
-        click.echo("\nCreating a new base drive remote.")
+        base_remote = _create_base_remote()
 
-        if _is_headless():
-            click.echo(
-                "\nHeadless environment detected. Before proceeding:\n"
-                "  Set up an SSH tunnel from a machine with a browser:\n"
-                "  ssh -L 53682:localhost:53682 <this-host>\n"
-            )
-
-        base_remote = click.prompt(
-            "Name for the base remote",
-            default="gdrive",
-        )
-
-        # Create config entry non-interactively (no OAuth yet)
-        click.echo(f"\nCreating remote '{base_remote}'...")
-        try:
-            rclone.config_create(base_remote, "drive", scope="drive")
-        except rclone.RcloneError as exc:
-            raise click.ClickException(
-                f"Failed to create remote: {exc.stderr}",
-            ) from exc
-
-        # Now do OAuth separately via interactive reconnect
-        click.echo(
-            "\nStarting OAuth. A browser window should open.\n"
-            "Complete the Google sign-in, then answer 'n' to\n"
-            "'Configure this as a Shared Drive?' (we handle that separately).\n"
-        )
-        exit_code = rclone.config_reconnect_interactive(base_remote)
-        if exit_code != 0:
-            click.echo(
-                "\nrclone reconnect exited with an error, but the token "
-                "may have been saved. Checking..."
-            )
-
-        # Verify the remote actually works
-        if not _validate_remote(base_remote):
-            raise click.ClickException(
-                f"Remote '{base_remote}' not working after auth. "
-                "Check rclone config and try again."
-            )
-        click.echo(f"Remote '{base_remote}' authenticated successfully.")
-
-    # Step 3: List shared drives (unless --personal-only)
     config = load_config()
     token = _get_token(base_remote)
 
     if not personal_only:
-        click.echo(f"\nFetching shared drives via '{base_remote}'...")
-        try:
-            drives = rclone.backend_drives(base_remote)
-        except rclone.RcloneError as exc:
-            click.echo(f"Could not list shared drives: {exc.stderr}")
-            drives = []
+        _enroll_shared_drives(base_remote, token, config)
 
-        if drives:
-            click.echo(f"\nFound {len(drives)} shared drive(s):\n")
-            for i, drive in enumerate(drives, 1):
-                click.echo(f"  {i}. {drive['name']} ({drive['id']})")
-
-            click.echo("\n  0. Skip shared drives")
-            selection = click.prompt(
-                "\nSelect drives to enable (comma-separated, e.g. 1,2,3)",
-                default="0",
-            )
-
-            if selection.strip() != "0":
-                indices = [
-                    int(s.strip()) for s in selection.split(",") if s.strip().isdigit()
-                ]
-                for idx in indices:
-                    if 1 <= idx <= len(drives):
-                        _create_shared_drive_remote(
-                            drives[idx - 1],
-                            token,
-                            config,
-                        )
-        else:
-            click.echo("No shared drives found.")
-
-    # Step 4: Register the base remote in config
     if base_remote not in config.get("remotes", {}):
         config.setdefault("remotes", {})[base_remote] = {
             "drive_name": "My Drive",

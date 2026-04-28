@@ -28,10 +28,13 @@ IMPORT_FORMATS = {
 # Reverse: export MIME type -> native Google MIME type
 # rclone lsjson reports native Google docs with their *export* MIME type,
 # not their native type. Use Size == -1 to detect native docs, then map back.
+_OOXML_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+_OOXML_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+_OOXML_PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 EXPORT_TO_NATIVE_MIME = {
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "application/vnd.google-apps.document",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "application/vnd.google-apps.spreadsheet",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "application/vnd.google-apps.presentation",
+    _OOXML_DOCX: "application/vnd.google-apps.document",
+    _OOXML_XLSX: "application/vnd.google-apps.spreadsheet",
+    _OOXML_PPTX: "application/vnd.google-apps.presentation",
 }
 
 
@@ -55,8 +58,11 @@ def _now_iso() -> str:
 
 
 def compute_md5(path: Path) -> str:
-    """Compute MD5 hash of a local file."""
-    hasher = hashlib.md5()
+    """Compute MD5 hash of a local file.
+
+    Used for content fingerprinting to compare with rclone's md5 — not security.
+    """
+    hasher = hashlib.md5()  # noqa: S324
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             hasher.update(chunk)

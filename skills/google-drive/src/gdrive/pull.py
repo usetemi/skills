@@ -37,7 +37,7 @@ def _get_remote_metadata(remote_path: str) -> dict:
 
     # lsjson on the parent directory, then filter
     search_path = f"{remote}:{parent}" if parent != "." else f"{remote}:"
-    items = rclone.lsjson(search_path, hash=True)
+    items = rclone.lsjson(search_path, with_hash=True)
 
     # For Google native docs, the remote name won't have an extension
     # but lsjson returns the name as-is
@@ -46,7 +46,7 @@ def _get_remote_metadata(remote_path: str) -> dict:
             return item
 
     # Try the exact path (for cases where the file is at root or name matches)
-    items = rclone.lsjson(remote_path, hash=True)
+    items = rclone.lsjson(remote_path, with_hash=True)
     if items:
         return items[0]
 
@@ -205,7 +205,7 @@ def _pull_batch(
     click.echo(f"Listing files in {remote_path}...")
 
     try:
-        items = rclone.lsjson(remote_path, hash=True, recursive=recursive)
+        items = rclone.lsjson(remote_path, with_hash=True, recursive=recursive)
     except rclone.RcloneError as exc:
         raise click.ClickException(f"Failed to list files: {exc.stderr}") from exc
 
@@ -234,7 +234,7 @@ def _pull_batch(
 
         # Mirror subdirectory structure
         relative = Path(item_path)
-        if relative.parent != Path("."):
+        if relative.parent != Path():
             file_dest = dest_base / relative.parent
             file_dest.mkdir(parents=True, exist_ok=True)
         else:

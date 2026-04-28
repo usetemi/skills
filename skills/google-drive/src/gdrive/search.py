@@ -8,6 +8,30 @@ from gdrive import rclone
 from gdrive.auth import import_rclone_remotes, load_config
 
 
+def _resolve_search_scope(args: tuple[str, ...]) -> tuple[list[str], tuple[str, ...]]:
+    """Split args into (remotes_to_search, query_parts) based on optional remote: prefix."""
+    if args[0].endswith(":"):
+        return [args[0].rstrip(":")], args[1:]
+    config = load_config()
+    if not config.get("remotes"):
+        config = import_rclone_remotes()
+    return list(config.get("remotes", {}).keys()), args
+
+
+def _print_search_results(remote: str, results: list[dict]) -> None:
+    """Print search results for a single remote."""
+    click.echo(f"\n{remote}: ({len(results)} result(s))\n")
+    for item in results:
+        name = item.get("name", "?")
+        mime = item.get("mimeType", "")
+        modified = item.get("modifiedTime", "")[:10]
+        link = item.get("webViewLink", "")
+        kind = _mime_label(mime)
+        click.echo(f"  {name}  [{kind}]  {modified}")
+        if link:
+            click.echo(f"    {link}")
+
+
 @click.command()
 @click.argument("args", nargs=-1, required=True)
 def search(args: tuple[str, ...]):
@@ -24,16 +48,7 @@ def search(args: tuple[str, ...]):
     except rclone.RcloneError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    # Parse: if first arg contains ':', it's a remote scope
-    if args[0].endswith(":"):
-        remotes_to_search = [args[0].rstrip(":")]
-        query_parts = args[1:]
-    else:
-        config = load_config()
-        if not config.get("remotes"):
-            config = import_rclone_remotes()
-        remotes_to_search = list(config.get("remotes", {}).keys())
-        query_parts = args
+    remotes_to_search, query_parts = _resolve_search_scope(args)
 
     if not query_parts:
         raise click.ClickException("No search query provided.")
@@ -55,18 +70,7 @@ def search(args: tuple[str, ...]):
         if not results:
             continue
 
-        click.echo(f"\n{remote}: ({len(results)} result(s))\n")
-        for item in results:
-            name = item.get("name", "?")
-            mime = item.get("mimeType", "")
-            modified = item.get("modifiedTime", "")[:10]
-            link = item.get("webViewLink", "")
-            kind = _mime_label(mime)
-
-            click.echo(f"  {name}  [{kind}]  {modified}")
-            if link:
-                click.echo(f"    {link}")
-
+        _print_search_results(remote, results)
         total += len(results)
 
     if total == 0:
@@ -83,4 +87,4 @@ def _mime_label(mime: str) -> str:
         "application/vnd.google-apps.presentation": "slides",
         "application/vnd.google-apps.folder": "folder",
     }
-    return labels.get(mime, mime.split("/")[-1] if "/" in mime else "file")
+    return labels.get(mime, mime.rsplit("/", maxsplit=1)[-1] if "/" in mime else "file")

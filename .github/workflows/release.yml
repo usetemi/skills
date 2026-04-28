@@ -50,3 +50,9 @@ jobs:
             ```
             npx skills add usetemi/skills
             ```
+
+            ## Updating
+
+            - **Claude Code**: enable auto-update for the `usetemi` marketplace via the `/plugin` UI, or re-run `/plugin install skills@usetemi`.
+            - **skills.sh**: `npx skills update` (works for global installs).
+            - **Claude Cowork or Claude Desktop**: download the new zip from this release, then use **Upload and Replace** on the existing skill (three-dot menu in Customize → Skills).

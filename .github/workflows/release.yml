@@ -29,5 +29,24 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.zip
-          generate_release_notes: true
           fail_on_unmatched_files: true
+          body: |
+            ## Install in Claude Cowork or Claude Desktop
+
+            1. Download the zip for the skill you want from the assets below.
+            2. Open Claude Cowork or Claude Desktop.
+            3. Go to **Settings → Capabilities → Skills**.
+            4. Click **+ Create skill** and upload the zip.
+
+            ## Install in Claude Code
+
+            ```
+            /plugin marketplace add usetemi/skills
+            /plugin install skills@usetemi
+            ```
+
+            ## Install via skills.sh (Codex, Cursor, Gemini CLI, and others)
+
+            ```
+            npx skills add usetemi/skills
+            ```

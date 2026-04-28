@@ -12,6 +12,8 @@ CONFIG_PATH = CONFIG_DIR / "config.json"
 
 VALID_KEYS = {"pagespeed-api-key"}
 
+MASK_PREFIX_CHARS = 4
+
 
 def load_config() -> dict:
     if not CONFIG_PATH.exists():
@@ -29,9 +31,9 @@ def get_config_value(key: str) -> str | None:
 
 
 def _mask_value(value: str) -> str:
-    if len(value) <= 4:
+    if len(value) <= MASK_PREFIX_CHARS:
         return "****"
-    return value[:4] + "*" * (len(value) - 4)
+    return value[:MASK_PREFIX_CHARS] + "*" * (len(value) - MASK_PREFIX_CHARS)
 
 
 @click.group()

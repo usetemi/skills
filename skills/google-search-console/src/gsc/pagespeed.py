@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -47,16 +48,17 @@ def pagespeed(url: str, category: tuple[str, ...], strategy: str, locale: str | 
         f"key={urllib.parse.quote(api_key, safe='')}",
         f"strategy={strategy}",
     ]
-    for cat in category:
-        query_parts.append(f"category={urllib.parse.quote(cat, safe='')}")
+    query_parts.extend(f"category={urllib.parse.quote(cat, safe='')}" for cat in category)
     if locale:
         query_parts.append(f"locale={urllib.parse.quote(locale, safe='')}")
 
     request_url = f"{API_URL}?{'&'.join(query_parts)}"
 
-    req = urllib.request.Request(request_url)
+    # URL scheme is fixed by API_URL (https://); Request/urlopen below cannot fetch arbitrary
+    # schemes from caller input.
+    req = urllib.request.Request(request_url)  # noqa: S310
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310
             data = json.loads(resp.read())
     except urllib.error.HTTPError as exc:
         error_body = exc.read().decode()

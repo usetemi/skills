@@ -3,28 +3,64 @@ name = "gdrive"
 version = "0.1.0"
 description = "Google Drive CLI wrapping rclone with manifest-tracked push/pull workflows"
 requires-python = ">=3.12"
-dependencies = ["click>=8.1"]
+dependencies = [
+    "click>=8.3",
+]
 
 [project.scripts]
 gdrive = "gdrive.cli:cli"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9,<1"]
+build-backend = "uv_build"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/gdrive"]
+[tool.uv.build-backend]
+module-name = "gdrive"
+module-root = "src"
 
 [tool.ruff]
 src = ["src"]
+line-length = 110
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+select = ["ALL"]
+ignore = [
+    "D",        # pydocstyle — no enforced docstring style
+    "COM812",   # trailing comma (conflicts with formatter)
+    "ISC001",   # implicit string concat (conflicts with formatter)
+    "ANN",      # type annotations — not enforced in this project
+    "T201",     # print statements — we use click.echo but print is allowed
+    "FBT001",   # boolean positional arg (Click uses them for is_flag)
+    "FBT002",   # boolean default positional arg
+    "PLR0913",  # too many arguments — Click commands have many options
+    "PLR0917",  # too many positional arguments — same reason
+    "TRY003",   # long exception messages — ClickException text is user-facing
+    "EM101",    # raw string in exception — same reason as TRY003
+    "EM102",    # f-string in exception — same
+    "S603",     # subprocess call (we shell out to gcloud in doctor)
+    "S607",     # subprocess partial path (gcloud is on PATH)
+    "PLC0415",  # lazy imports inside functions — deliberate for alpha modules
+    "BLE001",   # blind exception in doctor — we want to report & continue
+    "TC001",    # type-checking only imports — click signatures need them at runtime
+    "TC003",    # stdlib type-checking only imports
+    "ARG001",   # unused arguments in click callbacks (params may be unused in body)
+    "TRY301",   # raise-within-try — click-idiomatic in our except branches
+    "SLF001",   # private member access — proto-plus exposes _pb intentionally
+    "PTH123",   # builtin-open — fine for simple JSON loads
+    "PT011",    # pytest raises — N/A, we don't use pytest
+    "G004",     # f-string in logging — we don't use logging
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/gdrive/__init__.py" = ["D104"]
+"src/gdrive/cli.py" = ["E402"]  # imports must come before definitions — ok here
 
 [tool.ty.environment]
+python-version = "3.12"
 root = ["./src"]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15.2",
+    "ruff>=0.15.12",
+    "ty>=0.0.33",
 ]

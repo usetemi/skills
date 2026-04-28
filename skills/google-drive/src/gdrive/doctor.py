@@ -16,13 +16,11 @@ from gdrive.auth import (
 )
 from gdrive.manifest import Manifest
 
+MISSING_FILES_PREVIEW = 5
 
-@click.command()
-def doctor():
-    """Check gdrive setup and diagnose problems."""
-    ok = True
 
-    # 1. rclone installed
+def _check_rclone_installed() -> None:
+    """Verify rclone is on PATH or exit."""
     try:
         rclone_path = rclone.check_installed()
         _pass(f"rclone installed ({rclone_path})")
@@ -31,42 +29,35 @@ def doctor():
         click.echo("  Install: apt install rclone  or  brew install rclone")
         sys.exit(1)
 
-    # 2. Config file
-    if CONFIG_PATH.exists():
-        _pass(f"config exists ({CONFIG_PATH})")
-    else:
-        _warn("no config file (will be created on first 'gdrive auth')")
 
-    # 3. Check each configured remote
-    config = load_config()
-    remotes = config.get("remotes", {})
-
+def _check_configured_remotes(remotes: dict) -> bool:
+    """Verify each registered remote exists in rclone and authenticates. Returns ok status."""
     if not remotes:
         _warn("no remotes configured")
-    else:
-        try:
-            rclone_config = rclone.config_dump()
-        except rclone.RcloneError:
-            rclone_config = {}
+        return True
+    try:
+        rclone_config = rclone.config_dump()
+    except rclone.RcloneError:
+        rclone_config = {}
 
-        for name, info in remotes.items():
-            drive_name = info.get("drive_name", "")
+    ok = True
+    for name, info in remotes.items():
+        drive_name = info.get("drive_name", "")
+        if name not in rclone_config:
+            _fail(f"{name}: not in rclone config")
+            ok = False
+            continue
+        if _validate_remote(name):
+            _pass(f"{name}: authenticated ({drive_name})")
+        else:
+            _fail(f"{name}: authentication failed ({drive_name})")
+            click.echo("  Run 'gdrive auth' to re-authenticate")
+            ok = False
+    return ok
 
-            # Exists in rclone?
-            if name not in rclone_config:
-                _fail(f"{name}: not in rclone config")
-                ok = False
-                continue
 
-            # Token works?
-            if _validate_remote(name):
-                _pass(f"{name}: authenticated ({drive_name})")
-            else:
-                _fail(f"{name}: authentication failed ({drive_name})")
-                click.echo("  Run 'gdrive auth' to re-authenticate")
-                ok = False
-
-    # 4. Orphaned rclone drive remotes
+def _check_orphaned_remotes(remotes: dict) -> None:
+    """Warn about rclone drive remotes that gdrive doesn't know about."""
     try:
         rclone_config = rclone.config_dump()
     except rclone.RcloneError:
@@ -77,32 +68,51 @@ def doctor():
         for name, settings in rclone_config.items()
         if settings.get("type") == "drive" and name not in remotes
     ]
-    if orphaned:
-        _warn(f"{len(orphaned)} rclone drive remote(s) not in gdrive config")
-        for name in orphaned:
-            click.echo(f"    {name}")
-        if click.confirm("  Import them into gdrive config?", default=True):
-            import_rclone_remotes()
-            click.echo("  Imported.")
+    if not orphaned:
+        return
+    _warn(f"{len(orphaned)} rclone drive remote(s) not in gdrive config")
+    for name in orphaned:
+        click.echo(f"    {name}")
+    if click.confirm("  Import them into gdrive config?", default=True):
+        import_rclone_remotes()
+        click.echo("  Imported.")
 
-    # 5. Manifest health
+
+def _check_manifest_health() -> None:
+    """Report on missing-but-tracked files."""
     manifest = Manifest()
     entries = manifest.all_entries()
-    if entries:
-        missing = [p for p in entries if not Path(p).exists()]
-        if missing:
-            _warn(f"{len(missing)} tracked file(s) missing locally")
-            for path in missing[:5]:
-                click.echo(f"    {path}")
-            if len(missing) > 5:
-                click.echo(f"    ... and {len(missing) - 5} more")
-            click.echo("  Run 'gdrive untrack <path>' to clean up")
-        else:
-            _pass(f"{len(entries)} tracked file(s) all present")
-    else:
+    if not entries:
         click.echo("  No tracked files in manifest.")
+        return
+    missing = [p for p in entries if not Path(p).exists()]
+    if not missing:
+        _pass(f"{len(entries)} tracked file(s) all present")
+        return
+    _warn(f"{len(missing)} tracked file(s) missing locally")
+    for path in missing[:MISSING_FILES_PREVIEW]:
+        click.echo(f"    {path}")
+    if len(missing) > MISSING_FILES_PREVIEW:
+        click.echo(f"    ... and {len(missing) - MISSING_FILES_PREVIEW} more")
+    click.echo("  Run 'gdrive untrack <path>' to clean up")
 
-    # Summary
+
+@click.command()
+def doctor():
+    """Check gdrive setup and diagnose problems."""
+    _check_rclone_installed()
+
+    if CONFIG_PATH.exists():
+        _pass(f"config exists ({CONFIG_PATH})")
+    else:
+        _warn("no config file (will be created on first 'gdrive auth')")
+
+    config = load_config()
+    remotes = config.get("remotes", {})
+    ok = _check_configured_remotes(remotes)
+    _check_orphaned_remotes(remotes)
+    _check_manifest_health()
+
     click.echo()
     if ok:
         click.echo("All checks passed.")

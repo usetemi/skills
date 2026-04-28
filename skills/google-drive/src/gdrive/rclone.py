@@ -50,7 +50,7 @@ def run(
     """
     check_installed()
     cmd = ["rclone", *args]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if check and result.returncode != 0:
         raise RcloneError(cmd, result.returncode, result.stderr.strip())
     if json_output:
@@ -65,7 +65,7 @@ def run_interactive(*args: str) -> int:
     """
     check_installed()
     cmd = ["rclone", *args]
-    result = subprocess.run(cmd)
+    result = subprocess.run(cmd, check=False)
     return result.returncode
 
 
@@ -75,12 +75,12 @@ def run_interactive(*args: str) -> int:
 def lsjson(
     remote_path: str,
     *,
-    hash: bool = False,
+    with_hash: bool = False,
     recursive: bool = False,
 ) -> list[dict[str, Any]]:
     """List files/dirs as JSON objects."""
     args = ["lsjson", remote_path]
-    if hash:
+    if with_hash:
         args.append("--hash")
     if recursive:
         args.append("-R")

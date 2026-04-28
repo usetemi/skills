@@ -19,6 +19,49 @@ from gdrive.manifest import (
 from gdrive.pull import _get_remote_metadata, _parse_remote_path
 
 
+def _choose_upload_strategy(local: Path, entry: ManifestEntry | None) -> list[str]:
+    """Pick rclone extra args for re-importing as a Google native doc, if applicable."""
+    if entry and entry.original_mime_type in GOOGLE_MIME_TYPES:
+        import_format = IMPORT_FORMATS.get(local.suffix.lower())
+        if import_format:
+            label = _mime_to_label(entry.original_mime_type)
+            click.echo(f"Re-importing as Google {label}")
+            return ["--drive-import-formats", import_format]
+    elif not entry and local.suffix.lower() in IMPORT_FORMATS and click.confirm(
+        f"Import {local.name} as a Google native document?",
+        default=False,
+    ):
+        return ["--drive-import-formats", IMPORT_FORMATS[local.suffix.lower()]]
+    return []
+
+
+def _abort_on_remote_conflict(
+    local: Path,
+    full_remote: str,
+    entry: ManifestEntry,
+) -> bool:
+    """Prompt user if the remote changed since last sync. Returns True if user chose abort."""
+    try:
+        current = _get_remote_metadata(full_remote)
+    except (rclone.RcloneError, click.ClickException):
+        return False
+    current_mtime = current.get("ModTime", "")
+    if not current_mtime or current_mtime == entry.remote_mtime_at_sync:
+        return False
+    click.echo(f"Remote file {local.name} changed since last sync.")
+    click.echo(f"  Last synced:  {entry.remote_mtime_at_sync}")
+    click.echo(f"  Remote now:   {current_mtime}")
+    action = click.prompt(
+        "Choose action",
+        type=click.Choice(["push", "abort"]),
+        default="abort",
+    )
+    if action == "abort":
+        click.echo("Aborted. Run 'gdrive pull' to get the remote version first.")
+        return True
+    return False
+
+
 def _push_single_file(
     local: Path,
     remote: str,
@@ -29,46 +72,15 @@ def _push_single_file(
 ) -> bool:
     """Upload a single file and update manifest. Returns True on success."""
     full_remote = f"{remote}:{path}"
+    extra_args = _choose_upload_strategy(local, entry)
 
-    # Determine upload strategy based on original MIME type
-    extra_args: list[str] = []
-
-    if entry and entry.original_mime_type in GOOGLE_MIME_TYPES:
-        ext = local.suffix.lower()
-        import_format = IMPORT_FORMATS.get(ext)
-        if import_format:
-            extra_args = ["--drive-import-formats", import_format]
-            label = _mime_to_label(entry.original_mime_type)
-            click.echo(f"Re-importing as Google {label}")
-    elif not entry and local.suffix.lower() in IMPORT_FORMATS:
-        if click.confirm(
-            f"Import {local.name} as a Google native document?",
-            default=False,
-        ):
-            import_format = IMPORT_FORMATS[local.suffix.lower()]
-            extra_args = ["--drive-import-formats", import_format]
-
-    # Conflict detection: check if remote changed since last sync
-    if entry and entry.remote_mtime_at_sync and not force:
-        try:
-            current = _get_remote_metadata(full_remote)
-            current_mtime = current.get("ModTime", "")
-            if current_mtime and current_mtime != entry.remote_mtime_at_sync:
-                click.echo(f"Remote file {local.name} changed since last sync.")
-                click.echo(f"  Last synced:  {entry.remote_mtime_at_sync}")
-                click.echo(f"  Remote now:   {current_mtime}")
-                action = click.prompt(
-                    "Choose action",
-                    type=click.Choice(["push", "abort"]),
-                    default="abort",
-                )
-                if action == "abort":
-                    click.echo(
-                        "Aborted. Run 'gdrive pull' to get the remote version first.",
-                    )
-                    return False
-        except (rclone.RcloneError, click.ClickException):
-            pass  # File may not exist yet on remote -- that's fine
+    if (
+        entry
+        and entry.remote_mtime_at_sync
+        and not force
+        and _abort_on_remote_conflict(local, full_remote, entry)
+    ):
+        return False
 
     # Upload
     click.echo(f"Uploading {local.name} to {full_remote}...")
@@ -180,6 +192,23 @@ def push(
     _push_single_file(local, remote, path, manifest, entry, force)
 
 
+def _find_modified_files(
+    entries: dict[str, ManifestEntry],
+    filter_remote: str | None,
+) -> list[tuple[Path, ManifestEntry]]:
+    """Return tracked files whose local content changed since last sync."""
+    modified: list[tuple[Path, ManifestEntry]] = []
+    for path_str, entry in entries.items():
+        local = Path(path_str)
+        if not local.exists():
+            continue
+        if filter_remote and entry.remote != filter_remote:
+            continue
+        if compute_md5(local) != entry.local_md5:
+            modified.append((local, entry))
+    return modified
+
+
 def _push_all(force: bool, filter_remote: str | None) -> None:
     """Push all locally-modified tracked files."""
     manifest = Manifest()
@@ -189,17 +218,7 @@ def _push_all(force: bool, filter_remote: str | None) -> None:
         click.echo("No tracked files in manifest.")
         return
 
-    # Find modified files
-    modified: list[tuple[Path, ManifestEntry]] = []
-    for path_str, entry in entries.items():
-        local = Path(path_str)
-        if not local.exists():
-            continue
-        if filter_remote and entry.remote != filter_remote:
-            continue
-        current_md5 = compute_md5(local)
-        if current_md5 != entry.local_md5:
-            modified.append((local, entry))
+    modified = _find_modified_files(entries, filter_remote)
 
     if not modified:
         scope = f" on {filter_remote}" if filter_remote else ""

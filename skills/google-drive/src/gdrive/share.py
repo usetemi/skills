@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import urllib.error
 import urllib.request
 
 import click
@@ -50,7 +51,8 @@ def _create_permission(
         params += "&sendNotificationEmail=false"
 
     body = json.dumps(permission).encode()
-    req = urllib.request.Request(
+    # URL is built from a hardcoded https:// prefix and a Drive file id; not user-controlled.
+    req = urllib.request.Request(  # noqa: S310
         url + params,
         data=body,
         headers={
@@ -61,7 +63,7 @@ def _create_permission(
     )
 
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req) as resp:  # noqa: S310
             return json.loads(resp.read())
     except urllib.error.HTTPError as exc:
         error_body = exc.read().decode()

@@ -8,7 +8,7 @@
 
 ```bash
 /plugin marketplace add usetemi/skills
-/plugin install skills@usetemi
+/plugin install usetemi@usetemi
 ```
 
 ### skills.sh (Codex, Cursor, Gemini CLI, 37+ others)

@@ -5,11 +5,11 @@
   },
   "metadata": {
     "description": "Open-source agent skills from Temi (usetemi.com)",
-    "version": "0.1.0"
+    "version": "0.3.0"
   },
   "plugins": [
     {
-      "name": "skills",
+      "name": "usetemi",
       "description": "Open-source agent skills from Temi for Claude Code, Claude Cowork, Codex, Cursor, and Gemini CLI",
       "source": "./",
       "strict": false,

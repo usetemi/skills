@@ -59,7 +59,7 @@ A `v*` tag (e.g. `v0.1.0`) triggers `.github/workflows/release.yml`, which zips 
 ```bash
 # Claude Code plugin marketplace
 /plugin marketplace add usetemi/skills
-/plugin install skills@usetemi
+/plugin install usetemi@usetemi
 
 # skills.sh (Codex, Cursor, Gemini CLI, etc.)
 npx skills add usetemi/skills

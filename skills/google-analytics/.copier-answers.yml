@@ -17,6 +17,7 @@ default_credential_scope: SCOPE_READONLY
 default_oauth_port: 8086
 description: Google Analytics 4 CLI
 env_var_config_dir: GA4_CONFIG_DIR
+has_doctor: true
 login_default_help: Defaults to readonly + edit + manage-users.
 pkg: ga4
 scopes_block: 'SCOPE_READONLY = "https://www.googleapis.com/auth/analytics.readonly"

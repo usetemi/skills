@@ -8,6 +8,7 @@ default_credential_scope: SCOPE_WEBMASTERS_READONLY
 default_oauth_port: 8085
 description: Google Search Console CLI
 env_var_config_dir: GSC_CONFIG_DIR
+has_doctor: false
 login_default_help: Defaults to webmasters (read/write).
 pkg: gsc
 scopes_block: 'SCOPE_WEBMASTERS = "https://www.googleapis.com/auth/webmasters"

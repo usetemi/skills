@@ -11,7 +11,6 @@ and auto-refresh via the stored refresh token.
 from __future__ import annotations
 
 import json
-import os
 
 import click
 import google.auth.exceptions
@@ -19,6 +18,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
+from gsc.common import is_headless, output_json
 from gsc.config import CONFIG_DIR, legacy_config_dir
 
 # Scope sets — callers pass the set they need; the OAuth token must cover them.
@@ -71,10 +71,6 @@ def get_credentials(scopes: list[str] | None = None) -> Credentials:
     )
 
 
-def _is_headless() -> bool:
-    return not os.environ.get("DISPLAY") and not os.environ.get("BROWSER")
-
-
 def _deprecation_warning() -> str | None:
     """Build a one-line warning if legacy config dir exists; None otherwise."""
     legacy = legacy_config_dir()
@@ -111,7 +107,7 @@ def login(client_secret: str, port: int, scopes: tuple[str, ...]) -> None:
     control, download the JSON, and point --client-secret at it.
     """
     scope_list = list(scopes)
-    if _is_headless():
+    if is_headless():
         click.echo(
             "Headless environment detected. Open an SSH tunnel before continuing:\n"
             f"  ssh -L {port}:localhost:{port} <this-host>\n"
@@ -119,14 +115,14 @@ def login(client_secret: str, port: int, scopes: tuple[str, ...]) -> None:
             err=True,
         )
     flow = InstalledAppFlow.from_client_secrets_file(client_secret, scope_list)
-    creds = flow.run_local_server(port=port, open_browser=not _is_headless())
+    creds = flow.run_local_server(port=port, open_browser=not is_headless())
     if not isinstance(creds, Credentials):
         raise click.ClickException(
             f"Unexpected credential type {type(creds).__name__}; "
             "expected google.oauth2.credentials.Credentials from a Desktop OAuth client.",
         )
     _save_credentials(creds)
-    click.echo(json.dumps({"status": "authenticated", "scopes": scope_list}))
+    output_json({"status": "authenticated", "scopes": scope_list})
 
 
 @auth.command()
@@ -134,9 +130,9 @@ def logout() -> None:
     """Remove stored OAuth credentials."""
     if CREDENTIALS_PATH.exists():
         CREDENTIALS_PATH.unlink()
-        click.echo(json.dumps({"status": "logged_out"}))
+        output_json({"status": "logged_out"})
     else:
-        click.echo(json.dumps({"status": "already_logged_out"}))
+        output_json({"status": "already_logged_out"})
 
 
 @auth.command()
@@ -160,7 +156,7 @@ def status() -> None:
             }
     if warning := _deprecation_warning():
         info["deprecation_warning"] = warning
-    click.echo(json.dumps(info, indent=2))
+    output_json(info)
 
 
 @auth.command()
@@ -179,4 +175,4 @@ def whoami() -> None:
     }
     if getattr(creds, "quota_project_id", None):
         info["quota_project"] = creds.quota_project_id
-    click.echo(json.dumps(info, indent=2, default=str))
+    output_json(info)

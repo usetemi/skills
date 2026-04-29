@@ -23,6 +23,8 @@ _exclude:
   # Skills with uses_oauth=false (e.g., gdrive) skip auth.py.
   # Match the rendered path (without `.jinja`).
   - "{% if not uses_oauth %}src/{{ pkg }}/auth.py{% endif %}"
+  # Skills without a doctor command (e.g., gsc) skip doctor_helpers.py.
+  - "{% if not has_doctor %}src/{{ pkg }}/doctor_helpers.py{% endif %}"
 
 # --- Identity --------------------------------------------------------------
 
@@ -52,6 +54,11 @@ uses_oauth:
   type: bool
   default: true
   help: "False for skills that don't use the Google OAuth Desktop flow (e.g., gdrive)."
+
+has_doctor:
+  type: bool
+  default: true
+  help: "False for skills without a `<cmd> doctor` command (e.g., gsc) — skips doctor_helpers.py."
 
 default_oauth_port:
   type: int

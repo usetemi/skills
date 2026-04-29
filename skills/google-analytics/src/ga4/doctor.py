@@ -10,6 +10,7 @@ from google.api_core import exceptions as gax
 
 from ga4.auth import CREDENTIALS_PATH, SCOPE_READONLY, get_credentials
 from ga4.config import CONFIG_DIR, CONFIG_PATH, get_config_value
+from ga4.doctor_helpers import _fail, _pass, _warn
 
 
 @click.command()
@@ -93,15 +94,3 @@ def _summary(*, ok: bool) -> None:
     else:
         click.echo("Some checks failed. See above for details.")
         sys.exit(1)
-
-
-def _pass(msg: str) -> None:
-    click.echo(f"  OK    {msg}")
-
-
-def _fail(msg: str) -> None:
-    click.echo(f"  FAIL  {msg}")
-
-
-def _warn(msg: str) -> None:
-    click.echo(f"  WARN  {msg}")

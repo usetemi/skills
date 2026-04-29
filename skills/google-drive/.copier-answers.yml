@@ -8,6 +8,7 @@ default_credential_scope: ''
 default_oauth_port: 8086
 description: Google Drive CLI wrapping rclone with manifest-tracked push/pull workflows
 env_var_config_dir: GDRIVE_CONFIG_DIR
+has_doctor: true
 login_default_help: ''
 pkg: gdrive
 scopes_block: ''

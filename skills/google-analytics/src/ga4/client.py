@@ -13,7 +13,6 @@ by `handle_api_error()`.
 from __future__ import annotations
 
 import json
-import sys
 from typing import Any
 
 import click
@@ -30,6 +29,7 @@ from google.protobuf.field_mask_pb2 import FieldMask
 from google.protobuf.json_format import MessageToDict
 
 from ga4.auth import SCOPE_READONLY, get_credentials
+from ga4.common import output_json  # noqa: F401  (re-exported; callers import it from here)
 
 # ---------- client factories ----------
 
@@ -85,12 +85,6 @@ def collect_paged(pager: Any, max_results: int | None = None) -> list[dict]:
 
 
 # ---------- I/O helpers ----------
-
-def output_json(data: Any) -> None:
-    """Write JSON to stdout. Uses `default=str` so datetimes and protobuf timestamps serialize."""
-    json.dump(data, sys.stdout, indent=2, default=str)
-    sys.stdout.write("\n")
-
 
 def load_json_arg(value: str | None) -> Any:
     """Load a JSON argument that may be inline JSON or `@path/to/file.json`.

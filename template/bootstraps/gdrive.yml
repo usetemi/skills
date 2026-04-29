@@ -4,3 +4,4 @@ config_dir_name: gdrive
 env_var_config_dir: GDRIVE_CONFIG_DIR
 description: Google Drive CLI wrapping rclone with manifest-tracked push/pull workflows
 uses_oauth: false
+has_doctor: true

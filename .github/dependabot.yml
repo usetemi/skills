@@ -1,0 +1,84 @@
+version: 2
+
+updates:
+  # --- google-* skills (uv-managed) ----------------------------------------
+  # Each skill has its own pyproject.toml + uv.lock and is independently
+  # installable. We accept minor + patch updates and ignore majors — they
+  # stay opt-in (open the bump PR by hand once compat is verified).
+
+  - package-ecosystem: "uv"
+    directory: "/skills/google-analytics"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+    groups:
+      google-sdks:
+        patterns:
+          - "google-*"
+          - "protobuf"
+          - "proto-plus"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-tools:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "uv"
+    directory: "/skills/google-search-console"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+    groups:
+      google-sdks:
+        patterns:
+          - "google-*"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-tools:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "uv"
+    directory: "/skills/google-drive"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+    groups:
+      dev-tools:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # --- GitHub Actions ------------------------------------------------------
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+    groups:
+      gh-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

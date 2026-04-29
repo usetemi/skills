@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import sys
 from typing import TYPE_CHECKING
 
 import click
 from googleapiclient.discovery import build
 
 from gsc.auth import get_credentials
+from gsc.common import output_json  # noqa: F401  (re-exported; callers import it from here)
 
 if TYPE_CHECKING:
     from googleapiclient.errors import HttpError
@@ -45,9 +45,3 @@ def handle_api_error(exc: HttpError) -> None:
         429: (f"Rate limit exceeded. Wait a moment and retry.\nDetail: {detail}"),
     }
     raise click.ClickException(messages.get(status, f"API error ({status}): {detail}"))
-
-
-def output_json(data) -> None:
-    """Write JSON to stdout."""
-    json.dump(data, sys.stdout, indent=2, default=str)
-    sys.stdout.write("\n")

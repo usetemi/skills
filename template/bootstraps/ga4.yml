@@ -4,6 +4,7 @@ config_dir_name: ga4
 env_var_config_dir: GA4_CONFIG_DIR
 description: Google Analytics 4 CLI
 uses_oauth: true
+has_doctor: true
 default_oauth_port: 8086
 scopes_block: |-
   SCOPE_READONLY = "https://www.googleapis.com/auth/analytics.readonly"

@@ -4,6 +4,7 @@ config_dir_name: gsc
 env_var_config_dir: GSC_CONFIG_DIR
 description: Google Search Console CLI
 uses_oauth: true
+has_doctor: false
 default_oauth_port: 8085
 scopes_block: |-
   SCOPE_WEBMASTERS = "https://www.googleapis.com/auth/webmasters"

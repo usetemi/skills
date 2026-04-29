@@ -14,6 +14,7 @@ from gdrive.auth import (
     import_rclone_remotes,
     load_config,
 )
+from gdrive.doctor_helpers import _fail, _pass, _warn
 from gdrive.manifest import Manifest
 
 MISSING_FILES_PREVIEW = 5
@@ -121,13 +122,3 @@ def doctor():
         sys.exit(1)
 
 
-def _pass(msg: str) -> None:
-    click.echo(f"  OK  {msg}")
-
-
-def _fail(msg: str) -> None:
-    click.echo(f"  FAIL  {msg}")
-
-
-def _warn(msg: str) -> None:
-    click.echo(f"  WARN  {msg}")

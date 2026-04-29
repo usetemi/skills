@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
 
 import click
 
 from gdrive import rclone
+from gdrive.common import is_headless
 from gdrive.manifest import CONFIG_DIR, legacy_config_dir
 
 CONFIG_PATH = CONFIG_DIR / "config.json"
@@ -54,11 +54,6 @@ def _find_all_drive_remotes() -> list[str]:
         for name, settings in config.items()
         if settings.get("type") == "drive" and not settings.get("team_drive")
     ]
-
-
-def _is_headless() -> bool:
-    """Detect if running on a headless machine (no display/browser)."""
-    return not os.environ.get("DISPLAY") and not os.environ.get("BROWSER")
 
 
 def _get_token(remote_name: str) -> str | None:
@@ -135,7 +130,7 @@ def _create_base_remote() -> str:
     """Prompt for a name, create the rclone drive remote, and run OAuth interactively."""
     click.echo("\nCreating a new base drive remote.")
 
-    if _is_headless():
+    if is_headless():
         click.echo(
             "\nHeadless environment detected. Before proceeding:\n"
             "  Set up an SSH tunnel from a machine with a browser:\n"

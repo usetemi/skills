@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import click
 from googleapiclient.discovery import build
 
-from gsc.auth import require_credentials
+from gsc.auth import get_credentials
 
 if TYPE_CHECKING:
     from googleapiclient.errors import HttpError
@@ -17,12 +17,12 @@ if TYPE_CHECKING:
 
 def get_webmasters_service():
     """Build the webmasters v3 service (analytics, sites, sitemaps)."""
-    return build("webmasters", "v3", credentials=require_credentials())
+    return build("webmasters", "v3", credentials=get_credentials())
 
 
 def get_searchconsole_service():
     """Build the searchconsole v1 service (URL inspection)."""
-    return build("searchconsole", "v1", credentials=require_credentials())
+    return build("searchconsole", "v1", credentials=get_credentials())
 
 
 def handle_api_error(exc: HttpError) -> None:

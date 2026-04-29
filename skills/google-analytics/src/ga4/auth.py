@@ -22,7 +22,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from ga4.config import CONFIG_DIR
+from ga4.config import CONFIG_DIR, legacy_config_dir
 
 # Scope sets — callers pass the set they need; the OAuth token must cover them.
 SCOPE_READONLY = "https://www.googleapis.com/auth/analytics.readonly"
@@ -137,24 +137,35 @@ def logout() -> None:
         click.echo(json.dumps({"status": "already_logged_out"}))
 
 
+def _deprecation_warning() -> str | None:
+    """Build a one-line warning if legacy config dir exists; None otherwise."""
+    legacy = legacy_config_dir()
+    if legacy is None:
+        return None
+    return f"Legacy config at {legacy}. Run: ga4 config migrate --apply"
+
+
 @auth.command()
 def status() -> None:
     """Report auth status."""
+    info: dict
     if not CREDENTIALS_PATH.exists():
-        click.echo(json.dumps({"authenticated": False}))
-        return
-    try:
-        creds = Credentials.from_authorized_user_file(str(CREDENTIALS_PATH))
-    except (json.JSONDecodeError, ValueError, KeyError) as exc:
-        click.echo(json.dumps({"authenticated": False, "reason": f"malformed credentials: {exc}"}))
-        return
-    info: dict = {
-        "authenticated": creds.valid or bool(creds.refresh_token),
-        "valid": creds.valid,
-        "scopes": list(creds.scopes or []),
-        "expiry": creds.expiry.isoformat() if creds.expiry else None,
-        "has_refresh_token": bool(creds.refresh_token),
-    }
+        info = {"authenticated": False}
+    else:
+        try:
+            creds = Credentials.from_authorized_user_file(str(CREDENTIALS_PATH))
+        except (json.JSONDecodeError, ValueError, KeyError) as exc:
+            info = {"authenticated": False, "reason": f"malformed credentials: {exc}"}
+        else:
+            info = {
+                "authenticated": creds.valid or bool(creds.refresh_token),
+                "valid": creds.valid,
+                "scopes": list(creds.scopes or []),
+                "expiry": creds.expiry.isoformat() if creds.expiry else None,
+                "has_refresh_token": bool(creds.refresh_token),
+            }
+    if warning := _deprecation_warning():
+        info["deprecation_warning"] = warning
     click.echo(json.dumps(info, indent=2))
 
 

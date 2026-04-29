@@ -8,9 +8,17 @@ import os
 import click
 
 from gdrive import rclone
-from gdrive.manifest import CONFIG_DIR
+from gdrive.manifest import CONFIG_DIR, legacy_config_dir
 
 CONFIG_PATH = CONFIG_DIR / "config.json"
+
+
+def _deprecation_warning() -> str | None:
+    """Build a one-line warning if legacy config dir exists; None otherwise."""
+    legacy = legacy_config_dir()
+    if legacy is None:
+        return None
+    return f"Legacy config at {legacy}. Run: gdrive config migrate --apply"
 
 
 def load_config() -> dict:
@@ -194,14 +202,19 @@ def _enroll_shared_drives(base_remote: str, token: str | None, config: dict) -> 
             _create_shared_drive_remote(drives[index - 1], token, config)
 
 
-@click.command()
+@click.group()
+def auth() -> None:
+    """Set up and inspect Google Drive remotes."""
+
+
+@auth.command()
 @click.option(
     "--personal-only",
     is_flag=True,
     help="Only set up personal My Drive, skip shared drives.",
 )
-def auth(personal_only: bool):
-    """Set up Google Drive remotes for shared drives."""
+def setup(personal_only: bool):
+    """Run the interactive remote-configuration wizard."""
     try:
         rclone.check_installed()
     except rclone.RcloneError as exc:
@@ -230,6 +243,47 @@ def auth(personal_only: bool):
     click.echo(f"\nConfig saved to {CONFIG_PATH}")
     count = len(config["remotes"])
     click.echo(f"Configured {count} remote(s). Run 'gdrive ls' to verify.")
+
+
+@auth.command()
+def status() -> None:
+    """Report which remotes are configured and whether they authenticate."""
+    config = load_config()
+    remotes = config.get("remotes", {})
+    remote_status = []
+    any_authenticated = False
+    for name, info in remotes.items():
+        ok = _validate_remote(name)
+        if ok:
+            any_authenticated = True
+        remote_status.append({
+            "name": name,
+            "drive_name": info.get("drive_name", ""),
+            "type": info.get("type", ""),
+            "authenticated": ok,
+        })
+    info_dict: dict = {
+        "authenticated": any_authenticated and bool(remotes),
+        "remotes": remote_status,
+    }
+    if warning := _deprecation_warning():
+        info_dict["deprecation_warning"] = warning
+    click.echo(json.dumps(info_dict, indent=2))
+
+
+@auth.command()
+def logout() -> None:
+    """Forget gdrive's remote registrations.
+
+    Clears the `remotes` map in `~/.config/skills/gdrive/config.json`.
+    Rclone remotes themselves remain intact — use `rclone config delete`
+    to remove them.
+    """
+    config = load_config()
+    had_remotes = bool(config.get("remotes"))
+    config["remotes"] = {}
+    save_config(config)
+    click.echo(json.dumps({"status": "logged_out" if had_remotes else "already_logged_out"}))
 
 
 def _create_shared_drive_remote(

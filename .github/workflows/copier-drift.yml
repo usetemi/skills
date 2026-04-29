@@ -19,20 +19,20 @@ jobs:
       - name: Install copier
         run: pipx install copier
 
-      - name: Configure git for copier update
-        # copier update reads the destination as a Git working tree; CI checkout has
-        # default identity unset, so set a placeholder for any internal commit objects.
-        run: |
-          git config user.email "copier-drift@ci.local"
-          git config user.name "copier-drift"
-
       - name: Re-render every skill from the current template
+        # `copier update` requires the template to be its own Git repo, but ours
+        # lives at `template/` inside the parent repo. `copier copy --overwrite`
+        # using the skill's own `.copier-answers.yml` as the data source achieves
+        # the same goal: re-render in place using the recorded answers.
         run: |
           set -euo pipefail
           for skill in skills/*/; do
             if [ -f "$skill/.copier-answers.yml" ]; then
-              echo "::group::copier update $skill"
-              (cd "$skill" && copier update --defaults --trust)
+              echo "::group::re-render $skill"
+              (cd "$skill" && copier copy \
+                --data-file .copier-answers.yml \
+                --defaults --trust --overwrite \
+                ../../template .)
               echo "::endgroup::"
             fi
           done
@@ -40,6 +40,6 @@ jobs:
       - name: Fail if rendered files drifted
         run: |
           if ! git diff --exit-code skills/; then
-            echo "::error::Rendered files diverged from template/. Run 'copier update --defaults --trust' in each affected skill and commit the result."
+            echo "::error::Rendered files diverged from template/. Run the same copier copy invocation locally in each affected skill and commit the result."
             exit 1
           fi

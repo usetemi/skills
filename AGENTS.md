@@ -28,9 +28,13 @@ skills/
 
 ## Shared modules across the google-* skills
 
-`template/` is also a [Copier](https://copier.readthedocs.io/) template that renders shared modules (`__init__.py`, `__main__.py`, `auth.py`) into each google-* skill. Each consuming skill carries a `.copier-answers.yml` recording its substitution values; running `copier update --defaults --trust` from a skill's directory regenerates the templated files from the current template state.
+`template/` is also a [Copier](https://copier.readthedocs.io/) template that renders shared modules (`__init__.py`, `__main__.py`, `auth.py`) into each google-* skill. Each consuming skill carries a `.copier-answers.yml` recording its substitution values. To re-render after editing a template, run from inside the skill's directory:
 
-Edit templates under `template/src/{{ pkg }}/`, run `copier update` in each consuming skill, and commit both the template change and the regenerated outputs. `.github/workflows/copier-drift.yml` enforces this on PRs. Detailed authoring guide: [`template/AGENTS.md`](template/AGENTS.md).
+```bash
+copier copy --data-file .copier-answers.yml --defaults --trust --overwrite ../../template .
+```
+
+Commit both the template change and the regenerated outputs. `.github/workflows/copier-drift.yml` enforces this on PRs. Detailed authoring guide: [`template/AGENTS.md`](template/AGENTS.md).
 
 ## Creating a new skill
 

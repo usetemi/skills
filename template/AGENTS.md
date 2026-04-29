@@ -47,10 +47,15 @@ If new variation can't be expressed via a substitution, the right move is usuall
 ## Authoring workflow
 
 1. Edit a `.jinja` template under `src/{{ pkg }}/`.
-2. From each consuming skill's directory, run `copier update --defaults --trust`. Variables come from the skill's `.copier-answers.yml`.
+2. From each consuming skill's directory, re-render using its own answers file as the data source:
+   ```bash
+   copier copy --data-file .copier-answers.yml --defaults --trust --overwrite ../../template .
+   ```
 3. `git diff` shows the propagated change. Commit the template change and the regenerated outputs together.
 
-CI runs the same `copier update --defaults --trust` per skill on every PR that touches `template/**` or `skills/**`; non-empty `git diff` after the run fails the check (`copier-drift.yml`).
+CI runs the same invocation per skill on every PR that touches `template/**` or `skills/**`; a non-empty `git diff` after the re-render fails the check (`copier-drift.yml`).
+
+**Why `copier copy --overwrite` instead of `copier update`:** `copier update` requires the template to be a stand-alone Git repo so it can record and compare commit hashes in `.copier-answers.yml`. Our template lives at `template/` inside this repo, so we instead use `copier copy --overwrite` driven by the skill's existing answers file. The result is identical: re-render in place using the recorded answers.
 
 ## Adding a new templated module
 

@@ -1,0 +1,87 @@
+# Copier template for shared modules across the google-* skills in this repo.
+# See template/AGENTS.md for the authoring guide.
+#
+# Constraint: templates contain only Python + {{ variable }} tokens. No
+# {% if pkg == 'ga4' %}-style branching that knows about specific skills.
+# Skill-specific variation goes in the variables below; the template stays
+# downstream-agnostic.
+
+_subdirectory: .
+_answers_file: .copier-answers.yml
+
+# Skip the copier metadata files copier itself writes; only the rendered
+# Python modules should land in the destination.
+_exclude:
+  # Anything that's not a Jinja template under src/ stays in the template repo.
+  - "copier.yml"
+  - "SKILL.md"
+  - "AGENTS.md"
+  - "CLAUDE.md"
+  - "README.md"
+  - "bootstraps"
+  - "bootstraps/**"
+  # Skills with uses_oauth=false (e.g., gdrive) skip auth.py.
+  # Match the rendered path (without `.jinja`).
+  - "{% if not uses_oauth %}src/{{ pkg }}/auth.py{% endif %}"
+
+# --- Identity --------------------------------------------------------------
+
+pkg:
+  type: str
+  help: "Python package name (e.g., 'ga4')."
+
+cmd:
+  type: str
+  help: "CLI entry command (e.g., 'ga4'). Usually identical to pkg."
+
+config_dir_name:
+  type: str
+  help: "Subdirectory under ~/.config/skills/ for this skill's state."
+
+env_var_config_dir:
+  type: str
+  help: "Env var that overrides the config dir (e.g., 'GA4_CONFIG_DIR')."
+
+description:
+  type: str
+  help: "One-line skill description used in module docstrings."
+
+# --- OAuth (only applies when uses_oauth is true) -------------------------
+
+uses_oauth:
+  type: bool
+  default: true
+  help: "False for skills that don't use the Google OAuth Desktop flow (e.g., gdrive)."
+
+default_oauth_port:
+  type: int
+  default: 8086
+  help: "Local port for the OAuth callback. Must differ between skills running concurrently."
+
+scopes_block:
+  type: str
+  default: ""
+  multiline: true
+  help: |
+    Verbatim Python defining SCOPE_* constants and DEFAULT_LOGIN_SCOPES.
+    Inlined into auth.py. Empty when uses_oauth is false.
+
+login_default_help:
+  type: str
+  default: ""
+  help: "Help text for the --scope flag's default value (e.g., 'Defaults to readonly + edit + manage-users')."
+
+default_credential_scope:
+  type: str
+  default: ""
+  help: |
+    Name of the SCOPE_* constant used as the read-only default in
+    get_credentials() and whoami (e.g., 'SCOPE_READONLY').
+
+auth_module_extras:
+  type: str
+  default: ""
+  multiline: true
+  help: |
+    Optional extra paragraphs appended to the auth.py module docstring.
+    Use for skill-specific notes (e.g., ga4's ADC explanation).

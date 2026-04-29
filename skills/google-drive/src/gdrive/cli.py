@@ -5,6 +5,7 @@ from __future__ import annotations
 import click
 
 from gdrive.auth import auth
+from gdrive.config import config
 from gdrive.cp import cp
 from gdrive.doctor import doctor
 from gdrive.link import link
@@ -28,6 +29,7 @@ def cli():
 
 
 cli.add_command(auth)
+cli.add_command(config)
 cli.add_command(cp)
 cli.add_command(doctor)
 cli.add_command(link)

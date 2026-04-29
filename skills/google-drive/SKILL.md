@@ -20,13 +20,13 @@ Before running any gdrive command, ensure dependencies are available. Check and 
    - macOS: `brew install rclone`
 2. **uv**: Run `which uv`. If missing: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 3. **Project sync**: Run `uv sync --project <skill-dir>` to ensure the venv and deps are ready.
-4. **Auth**: Run `gdrive ls`. If it shows "No remotes configured", the user needs to run `gdrive auth` (interactive -- tell the user what's about to happen and that they'll need to complete OAuth in a browser).
+4. **Auth**: Run `gdrive ls`. If it shows "No remotes configured", the user needs to run `gdrive auth setup` (interactive -- tell the user what's about to happen and that they'll need to complete OAuth in a browser).
 
 For headless machines (no `$DISPLAY`), instruct the user to set up an SSH tunnel first:
 ```
 ssh -L 53682:localhost:53682 <remote-host>
 ```
-Then run `gdrive auth` on the remote host and open the printed URL on their local machine.
+Then run `gdrive auth setup` on the remote host and open the printed URL on their local machine.
 
 See `references/setup.md` for the full setup guide.
 
@@ -42,13 +42,13 @@ For brevity, examples below use `gdrive` directly.
 
 ## Commands
 
-### auth -- Set up remotes
+### auth -- Manage remotes
 
 ```bash
-gdrive auth
+gdrive auth setup     # interactive: configure rclone remotes (run once per machine)
+gdrive auth status    # report which remotes are configured and authenticate
+gdrive auth logout    # forget gdrive's remote registrations (rclone state stays)
 ```
-
-Interactive setup for rclone remotes. Run once per machine. Re-run to add more drives.
 
 ### ls -- List drives or files
 
@@ -259,7 +259,7 @@ If the user edited the doc directly in Google Docs between sessions, the pulled 
 
 ## Manifest
 
-The manifest at `~/.config/gdrive/manifest.json` tracks:
+The manifest at `~/.config/skills/gdrive/manifest.json` tracks:
 - Remote location and Google Drive file ID
 - Original MIME type (for format-aware re-import)
 - MD5 hashes at last sync (local and remote)
@@ -288,15 +288,22 @@ Lowercased, hyphenated names work best. The `auth` wizard suggests names based o
 **Push doesn't re-import as Google Doc** -- Ensure the file was originally pulled (has manifest entry with Google MIME type). For new files, use `--drive-import-formats` flag.
 
 
-**Manifest out of sync** -- Run `gdrive untrack` on stale entries, or delete `~/.config/gdrive/manifest.json` to reset.
+**Manifest out of sync** -- Run `gdrive untrack` on stale entries, or delete `~/.config/skills/gdrive/manifest.json` to reset.
 
 **General setup issues** -- Run `gdrive doctor` to diagnose problems with rclone, remotes, and manifest health.
 
 ## Configuration Files
 
-- **Manifest**: `~/.config/gdrive/manifest.json`
-- **Config**: `~/.config/gdrive/config.json`
+- **Manifest**: `~/.config/skills/gdrive/manifest.json`
+- **Config**: `~/.config/skills/gdrive/config.json`
 - **rclone config**: `~/.config/rclone/rclone.conf` (managed by rclone)
+- Override the gdrive config dir with `GDRIVE_CONFIG_DIR=/path/to/dir`
+
+### Migrating from earlier versions
+
+If upgrading from a build that stored config at `~/.config/gdrive/`, run `gdrive config migrate --apply` to move the manifest and config to the new location. `gdrive auth status` emits a `deprecation_warning` until the migration runs.
+
+The interactive wizard previously invoked as `gdrive auth` is now `gdrive auth setup`. The bare `gdrive auth` is now a command group containing `setup`, `status`, and `logout`.
 
 Add to `.gitignore` in any repo using this skill:
 ```

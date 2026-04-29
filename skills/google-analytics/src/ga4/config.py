@@ -14,7 +14,15 @@ def get_config_dir() -> Path:
     override = os.environ.get("GA4_CONFIG_DIR")
     if override:
         return Path(override).expanduser()
-    return Path.home() / ".config" / "ga4"
+    return Path.home() / ".config" / "skills" / "ga4"
+
+
+def legacy_config_dir() -> Path | None:
+    """Return the pre-migration `~/.config/ga4/` path if it exists and differs from the current dir."""
+    legacy = Path.home() / ".config" / "ga4"
+    if legacy != get_config_dir() and legacy.exists():
+        return legacy
+    return None
 
 
 CONFIG_DIR = get_config_dir()
@@ -124,3 +132,29 @@ def config_set_property(property_id: str) -> None:
     cfg["default-property"] = canonical
     save_config(cfg)
     click.echo(json.dumps({"status": "saved", "default-property": canonical}))
+
+
+@config.command("migrate")
+@click.option("--apply", is_flag=True, help="Move files (default is dry-run).")
+def config_migrate(apply: bool) -> None:
+    """Move config from the legacy `~/.config/ga4/` to `~/.config/skills/ga4/`."""
+    old = legacy_config_dir()
+    new = get_config_dir()
+    if old is None:
+        click.echo(json.dumps({"status": "no_migration_needed", "path": str(new)}))
+        return
+    files = sorted(str(p.relative_to(old)) for p in old.rglob("*") if p.is_file())
+    if not apply:
+        click.echo(
+            json.dumps(
+                {"status": "dry_run", "old": str(old), "new": str(new), "files": files},
+                indent=2,
+            ),
+        )
+        click.echo("Run with --apply to perform the move.", err=True)
+        return
+    if new.exists():
+        raise click.ClickException(f"Target {new} already exists; refusing to overwrite.")
+    new.parent.mkdir(parents=True, exist_ok=True)
+    old.rename(new)
+    click.echo(json.dumps({"status": "migrated", "old": str(old), "new": str(new), "files": files}))

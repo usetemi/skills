@@ -1,4 +1,10 @@
-"""OAuth2 authentication for Google Search Console."""
+"""Authentication: OAuth 2.0 Desktop flow.
+
+Uses `google-auth-oauthlib`'s `InstalledAppFlow` to obtain a user OAuth token
+against a Desktop OAuth client you create in GCP. Credentials are stored at
+`~/.config/skills/gsc/credentials.json` and auto-refresh via the stored
+refresh token.
+"""
 
 from __future__ import annotations
 
@@ -6,43 +12,39 @@ import json
 import os
 
 import click
+import google.auth.exceptions
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from gsc.config import CONFIG_DIR
+from gsc.config import CONFIG_DIR, legacy_config_dir
 
-SCOPES = ["https://www.googleapis.com/auth/webmasters"]
+# Scope sets — callers pass the set they need; the OAuth token must cover them.
+SCOPE_WEBMASTERS = "https://www.googleapis.com/auth/webmasters"
+SCOPE_WEBMASTERS_READONLY = "https://www.googleapis.com/auth/webmasters.readonly"
+
+# Default scopes requested at login time if caller doesn't specify.
+DEFAULT_LOGIN_SCOPES = [SCOPE_WEBMASTERS]
+
 CREDENTIALS_PATH = CONFIG_DIR / "credentials.json"
 
 
-def load_credentials() -> Credentials | None:
-    """Load stored credentials, refreshing if expired. Returns None if unavailable."""
+def _load_credentials(scopes: list[str]) -> Credentials | None:
+    """Load stored OAuth user credentials, refreshing if expired. Returns None if unavailable."""
     if not CREDENTIALS_PATH.exists():
         return None
     try:
-        creds = Credentials.from_authorized_user_file(str(CREDENTIALS_PATH), SCOPES)
+        creds = Credentials.from_authorized_user_file(str(CREDENTIALS_PATH), scopes)
     except (json.JSONDecodeError, ValueError, KeyError):
         return None
     if creds.expired and creds.refresh_token:
         try:
             creds.refresh(Request())
             _save_credentials(creds)
-        except Exception:
+        except google.auth.exceptions.RefreshError:
             return None
     if not creds.valid:
         return None
-    return creds
-
-
-def require_credentials() -> Credentials:
-    """Load credentials or raise ClickException with instructions."""
-    creds = load_credentials()
-    if creds is None:
-        raise click.ClickException(
-            "Not authenticated. Run: gsc auth login "
-            "--client-secret <path-to-client_secret.json>"
-        )
     return creds
 
 
@@ -51,25 +53,62 @@ def _save_credentials(creds: Credentials) -> None:
     CREDENTIALS_PATH.write_text(creds.to_json())
 
 
+def get_credentials(scopes: list[str] | None = None) -> Credentials:
+    """Resolve stored OAuth credentials for the given scope set.
+
+    Raises ClickException with instructions if no valid credentials are available.
+    """
+    scopes = scopes or [SCOPE_WEBMASTERS_READONLY]
+    creds = _load_credentials(scopes)
+    if creds is not None:
+        return creds
+    raise click.ClickException(
+        "No credentials. Run:\n"
+        "  gsc auth login --client-secret <path-to-oauth-client.json>\n"
+        "Scopes needed for this command: " + ", ".join(scopes),
+    )
+
+
 def _is_headless() -> bool:
     return not os.environ.get("DISPLAY") and not os.environ.get("BROWSER")
 
 
+def _deprecation_warning() -> str | None:
+    """Build a one-line warning if legacy config dir exists; None otherwise."""
+    legacy = legacy_config_dir()
+    if legacy is None:
+        return None
+    return f"Legacy config at {legacy}. Run: gsc config migrate --apply"
+
+
 @click.group()
-def auth():
-    """Manage authentication."""
+def auth() -> None:
+    """Manage OAuth authentication."""
 
 
 @auth.command()
 @click.option(
     "--client-secret",
     required=True,
-    type=click.Path(exists=True),
-    help="Path to OAuth client_secret.json from GCP.",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to OAuth client_secret.json (Desktop client from GCP).",
 )
 @click.option("--port", default=8085, help="Local port for OAuth callback.")
-def login(client_secret: str, port: int):
-    """Authenticate with Google Search Console via OAuth."""
+@click.option(
+    "--scope",
+    "scopes",
+    multiple=True,
+    default=DEFAULT_LOGIN_SCOPES,
+    help="OAuth scope. Repeatable. Defaults to webmasters (read/write).",
+)
+def login(client_secret: str, port: int, scopes: tuple[str, ...]) -> None:
+    """Authenticate via OAuth Desktop flow.
+
+    Create a Desktop OAuth client at
+    https://console.cloud.google.com/apis/credentials in any GCP project you
+    control, download the JSON, and point --client-secret at it.
+    """
+    scope_list = list(scopes)
     if _is_headless():
         click.echo(
             "Headless environment detected. Open an SSH tunnel before continuing:\n"
@@ -77,31 +116,65 @@ def login(client_secret: str, port: int):
             "Then open the printed URL on a machine with a browser.",
             err=True,
         )
-
-    flow = InstalledAppFlow.from_client_secrets_file(client_secret, SCOPES)
+    flow = InstalledAppFlow.from_client_secrets_file(client_secret, scope_list)
     creds = flow.run_local_server(port=port, open_browser=not _is_headless())
+    if not isinstance(creds, Credentials):
+        raise click.ClickException(
+            f"Unexpected credential type {type(creds).__name__}; "
+            "expected google.oauth2.credentials.Credentials from a Desktop OAuth client.",
+        )
     _save_credentials(creds)
-    click.echo(json.dumps({"status": "authenticated", "scopes": SCOPES}))
+    click.echo(json.dumps({"status": "authenticated", "scopes": scope_list}))
 
 
 @auth.command()
-def status():
-    """Check authentication status."""
-    creds = load_credentials()
-    if creds is None:
-        click.echo(json.dumps({"authenticated": False}))
-    else:
-        info: dict = {"authenticated": True, "scopes": list(creds.scopes or SCOPES)}
-        if creds.expiry:
-            info["expiry"] = creds.expiry.isoformat()
-        click.echo(json.dumps(info))
-
-
-@auth.command()
-def logout():
-    """Remove stored credentials."""
+def logout() -> None:
+    """Remove stored OAuth credentials."""
     if CREDENTIALS_PATH.exists():
         CREDENTIALS_PATH.unlink()
         click.echo(json.dumps({"status": "logged_out"}))
     else:
         click.echo(json.dumps({"status": "already_logged_out"}))
+
+
+@auth.command()
+def status() -> None:
+    """Report auth status."""
+    info: dict
+    if not CREDENTIALS_PATH.exists():
+        info = {"authenticated": False}
+    else:
+        try:
+            creds = Credentials.from_authorized_user_file(str(CREDENTIALS_PATH))
+        except (json.JSONDecodeError, ValueError, KeyError) as exc:
+            info = {"authenticated": False, "reason": f"malformed credentials: {exc}"}
+        else:
+            info = {
+                "authenticated": creds.valid or bool(creds.refresh_token),
+                "valid": creds.valid,
+                "scopes": list(creds.scopes or []),
+                "expiry": creds.expiry.isoformat() if creds.expiry else None,
+                "has_refresh_token": bool(creds.refresh_token),
+            }
+    if warning := _deprecation_warning():
+        info["deprecation_warning"] = warning
+    click.echo(json.dumps(info, indent=2))
+
+
+@auth.command()
+def whoami() -> None:
+    """Print the currently authenticated identity and scopes.
+
+    OAuth doesn't expose the user email on the credentials object; this reports
+    what we know — scopes, token validity, expiry.
+    """
+    creds = get_credentials([SCOPE_WEBMASTERS_READONLY])
+    info: dict = {
+        "type": type(creds).__name__,
+        "scopes": list(creds.scopes or []),
+        "expiry": creds.expiry.isoformat() if creds.expiry else None,
+        "has_refresh_token": bool(creds.refresh_token),
+    }
+    if getattr(creds, "quota_project_id", None):
+        info["quota_project"] = creds.quota_project_id
+    click.echo(json.dumps(info, indent=2, default=str))

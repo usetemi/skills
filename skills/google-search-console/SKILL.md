@@ -28,7 +28,7 @@ Save your OAuth client_secret.json (downloaded from GCP) to a known path, then a
 gsc auth login --client-secret /path/to/client_secret.json
 ```
 
-A browser opens for OAuth consent. On a headless machine, open an SSH tunnel first: `ssh -L 8085:localhost:8085 <this-host>`, then open the printed URL on a machine with a browser. Credentials are stored at `~/.config/gsc/credentials.json` and auto-refresh.
+A browser opens for OAuth consent. On a headless machine, open an SSH tunnel first: `ssh -L 8085:localhost:8085 <this-host>`, then open the printed URL on a machine with a browser. Credentials are stored at `~/.config/skills/gsc/credentials.json` and auto-refresh.
 
 If you need to create a new OAuth client, see `references/setup.md` for the full GCP click-path.
 
@@ -223,8 +223,13 @@ See `references/seo-playbook.md` for detailed interpretation guides including:
 
 ## Configuration Files
 
-- **OAuth credentials**: `~/.config/gsc/credentials.json`
-- **Config (API keys)**: `~/.config/gsc/config.json`
+- **OAuth credentials**: `~/.config/skills/gsc/credentials.json`
+- **Config (API keys)**: `~/.config/skills/gsc/config.json`
+- Override the config dir with `GSC_CONFIG_DIR=/path/to/dir`
+
+### Migrating from earlier versions
+
+If upgrading from a build that stored config at `~/.config/gsc/`, run `gsc config migrate --apply` to move the credentials and config to the new location. `gsc auth status` emits a `deprecation_warning` until the migration runs.
 
 ## Troubleshooting
 

@@ -4,11 +4,29 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-CONFIG_DIR = Path.home() / ".config" / "gdrive"
+
+def get_config_dir() -> Path:
+    """Resolve the gdrive config directory, honoring GDRIVE_CONFIG_DIR override."""
+    override = os.environ.get("GDRIVE_CONFIG_DIR")
+    if override:
+        return Path(override).expanduser()
+    return Path.home() / ".config" / "skills" / "gdrive"
+
+
+def legacy_config_dir() -> Path | None:
+    """Return the pre-migration `~/.config/gdrive/` path if it exists and differs from the current dir."""
+    legacy = Path.home() / ".config" / "gdrive"
+    if legacy != get_config_dir() and legacy.exists():
+        return legacy
+    return None
+
+
+CONFIG_DIR = get_config_dir()
 MANIFEST_PATH = CONFIG_DIR / "manifest.json"
 
 # Google Workspace MIME types and their export extensions

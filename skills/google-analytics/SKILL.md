@@ -15,7 +15,7 @@ description: Query GA4 reports (users, sessions, conversions, funnels, realtime)
 
 All commands emit JSON to stdout with `indent=2`. Errors go to stderr as plain text with exit 1. Destructive operations require `--yes/-y` on the CLI; the skill adds an additional user-confirmation layer (see **Destructive operations** below).
 
-Auth is OAuth-user-only via `ga4 auth login --client-secret <Desktop-OAuth-client.json>`. The CLI owns its own state at `~/.config/ga4/` (not under the skill's path — `ga4` is usable outside this skill).
+Auth is OAuth-user-only via `ga4 auth login --client-secret <Desktop-OAuth-client.json>`. The CLI owns its own state at `~/.config/skills/ga4/` (not under the skill's path — `ga4` is usable outside this skill).
 
 ## Before First Use
 
@@ -220,6 +220,10 @@ Engagement benchmarks, attribution model differences, funnel drop-off heuristics
 
 ## Configuration files
 
-- `~/.config/ga4/config.json` — default property and other CLI settings
-- `~/.config/ga4/credentials.json` — OAuth user creds (written by `ga4 auth login`)
+- `~/.config/skills/ga4/config.json` — default property and other CLI settings
+- `~/.config/skills/ga4/credentials.json` — OAuth user creds (written by `ga4 auth login`)
 - Override the config dir with `GA4_CONFIG_DIR=/path/to/dir`
+
+### Migrating from earlier versions
+
+If upgrading from a build that stored config at `~/.config/ga4/`, run `ga4 config migrate --apply` to move the credentials and config to the new location. `ga4 auth status` emits a `deprecation_warning` until the migration runs.

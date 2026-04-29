@@ -1,0 +1,16 @@
+pkg: gsc
+cmd: gsc
+config_dir_name: gsc
+env_var_config_dir: GSC_CONFIG_DIR
+description: Google Search Console CLI
+uses_oauth: true
+default_oauth_port: 8085
+scopes_block: |-
+  SCOPE_WEBMASTERS = "https://www.googleapis.com/auth/webmasters"
+  SCOPE_WEBMASTERS_READONLY = "https://www.googleapis.com/auth/webmasters.readonly"
+
+  # Default scopes requested at login time if caller doesn't specify.
+  DEFAULT_LOGIN_SCOPES = [SCOPE_WEBMASTERS]
+default_credential_scope: SCOPE_WEBMASTERS_READONLY
+login_default_help: Defaults to webmasters (read/write).
+auth_module_extras: ""

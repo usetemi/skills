@@ -4,14 +4,10 @@
 
 Uses `google-auth-oauthlib`'s `InstalledAppFlow` to obtain a user OAuth token
 against a Desktop OAuth client you create in GCP. Credentials are stored at
-`~/.config/skills/ga4/credentials.json`
-and auto-refresh via the stored refresh token.
+`~/.config/skills/{{ config_dir_name }}/credentials.json`
+and auto-refresh via the stored refresh token.{% if auth_module_extras %}
 
-ADC (`gcloud auth application-default login`) is deliberately NOT supported —
-Google is phasing out analytics scopes on the default gcloud client ID, and
-insisting everyone bring their own OAuth client ID for those scopes defeats
-the "easy" story of ADC. Stick with the OAuth flow here; it's one extra step
-up front but stays working.
+{{ auth_module_extras }}{% endif %}
 """
 
 from __future__ import annotations
@@ -25,17 +21,10 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from ga4.config import CONFIG_DIR, legacy_config_dir
+from {{ pkg }}.config import CONFIG_DIR, legacy_config_dir
 
 # Scope sets — callers pass the set they need; the OAuth token must cover them.
-SCOPE_READONLY = "https://www.googleapis.com/auth/analytics.readonly"
-SCOPE_EDIT = "https://www.googleapis.com/auth/analytics.edit"
-SCOPE_MANAGE_USERS = "https://www.googleapis.com/auth/analytics.manage.users"
-SCOPE_PROVISION = "https://www.googleapis.com/auth/analytics.provision"
-SCOPE_USER_DELETION = "https://www.googleapis.com/auth/analytics.user.deletion"
-
-# Default scopes requested at login time if caller doesn't specify.
-DEFAULT_LOGIN_SCOPES = [SCOPE_READONLY, SCOPE_EDIT, SCOPE_MANAGE_USERS]
+{{ scopes_block }}
 
 CREDENTIALS_PATH = CONFIG_DIR / "credentials.json"
 
@@ -69,13 +58,13 @@ def get_credentials(scopes: list[str] | None = None) -> Credentials:
 
     Raises ClickException with instructions if no valid credentials are available.
     """
-    scopes = scopes or [SCOPE_READONLY]
+    scopes = scopes or [{{ default_credential_scope }}]
     creds = _load_credentials(scopes)
     if creds is not None:
         return creds
     raise click.ClickException(
         "No credentials. Run:\n"
-        "  ga4 auth login --client-secret <path-to-oauth-client.json>\n"
+        "  {{ cmd }} auth login --client-secret <path-to-oauth-client.json>\n"
         "Scopes needed for this command: " + ", ".join(scopes),
     )
 
@@ -89,7 +78,7 @@ def _deprecation_warning() -> str | None:
     legacy = legacy_config_dir()
     if legacy is None:
         return None
-    return f"Legacy config at {legacy}. Run: ga4 config migrate --apply"
+    return f"Legacy config at {legacy}. Run: {{ cmd }} config migrate --apply"
 
 
 @click.group()
@@ -104,13 +93,13 @@ def auth() -> None:
     type=click.Path(exists=True, dir_okay=False),
     help="Path to OAuth client_secret.json (Desktop client from GCP).",
 )
-@click.option("--port", default=8086, help="Local port for OAuth callback.")
+@click.option("--port", default={{ default_oauth_port }}, help="Local port for OAuth callback.")
 @click.option(
     "--scope",
     "scopes",
     multiple=True,
     default=DEFAULT_LOGIN_SCOPES,
-    help="OAuth scope. Repeatable. Defaults to readonly + edit + manage-users.",
+    help="OAuth scope. Repeatable. {{ login_default_help }}",
 )
 def login(client_secret: str, port: int, scopes: tuple[str, ...]) -> None:
     """Authenticate via OAuth Desktop flow.
@@ -179,7 +168,7 @@ def whoami() -> None:
     OAuth doesn't expose the user email on the credentials object; this reports
     what we know — scopes, token validity, expiry.
     """
-    creds = get_credentials([SCOPE_READONLY])
+    creds = get_credentials([{{ default_credential_scope }}])
     info: dict = {
         "type": type(creds).__name__,
         "scopes": list(creds.scopes or []),

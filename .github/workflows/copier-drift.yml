@@ -1,0 +1,45 @@
+name: copier-drift
+
+on:
+  pull_request:
+    paths:
+      - "template/**"
+      - "skills/**/.copier-answers.yml"
+      - "skills/**/src/**"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install copier
+        run: pipx install copier
+
+      - name: Re-render every skill from the current template
+        # `copier update` requires the template to be its own Git repo, but ours
+        # lives at `template/` inside the parent repo. `copier copy --overwrite`
+        # using the skill's own `.copier-answers.yml` as the data source achieves
+        # the same goal: re-render in place using the recorded answers.
+        run: |
+          set -euo pipefail
+          for skill in skills/*/; do
+            if [ -f "$skill/.copier-answers.yml" ]; then
+              echo "::group::re-render $skill"
+              (cd "$skill" && copier copy \
+                --data-file .copier-answers.yml \
+                --defaults --trust --overwrite \
+                ../../template .)
+              echo "::endgroup::"
+            fi
+          done
+
+      - name: Fail if rendered files drifted
+        run: |
+          if ! git diff --exit-code skills/; then
+            echo "::error::Rendered files diverged from template/. Run the same copier copy invocation locally in each affected skill and commit the result."
+            exit 1
+          fi

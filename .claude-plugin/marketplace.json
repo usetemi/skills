@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Open-source agent skills from Temi (usetemi.com)",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
@@ -16,7 +16,10 @@
       "skills": [
         "./skills/google-analytics",
         "./skills/google-drive",
-        "./skills/google-search-console"
+        "./skills/google-search-console",
+        "./skills/harness-engineering",
+        "./skills/humanize",
+        "./skills/pr-video-receipts"
       ]
     }
   ]

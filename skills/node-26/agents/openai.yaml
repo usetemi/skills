@@ -1,0 +1,4 @@
+interface:
+  display_name: "Node 26"
+  short_description: "Upgrade and adopt Node.js 26"
+  default_prompt: "Use $node-26 to plan a Node.js 24 project upgrade to Node.js 26."

@@ -15,7 +15,6 @@ Verify: `rclone version`
 Pick one -- ask the user before running anything that modifies their system:
 
 - macOS / Linux with Homebrew: `brew install uv`
-- pipx: `pipx install uv`
 - Other platforms: https://docs.astral.sh/uv/getting-started/installation/
 
 ## 3. Run gdrive auth

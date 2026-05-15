@@ -8,7 +8,7 @@ Everything needed to go from a clean machine to `ga4 doctor` all-green.
 
 ## Prerequisites
 
-- `uv` on `$PATH` — if missing, install via `brew install uv`, `pipx install uv`, or https://docs.astral.sh/uv/getting-started/installation/. Ask the user before installing.
+- `uv` on `$PATH` — if missing, install via `brew install uv` or https://docs.astral.sh/uv/getting-started/installation/. Ask the user before installing.
 - A Google Cloud project you control (to create an OAuth client in).
 - A GA4 account + property whose access you can grant to your Google account (or ask someone with Administrator on the GA side).
 

@@ -21,7 +21,6 @@ Before running any gdrive command, check that dependencies are available. If any
    - Other: see https://rclone.org/install/
 2. **uv**: Run `which uv`. If missing, show the user the install options and ask before proceeding:
    - macOS / Linux with Homebrew: `brew install uv`
-   - pipx: `pipx install uv`
    - Other: see https://docs.astral.sh/uv/getting-started/installation/
 3. **Project sync**: Run `uv sync --project <skill-dir>` to ensure the venv and deps are ready.
 4. **Auth**: Run `gdrive ls`. If it shows "No remotes configured", the user needs to run `gdrive auth setup` (interactive -- tell the user what's about to happen and that they'll need to complete OAuth in a browser).

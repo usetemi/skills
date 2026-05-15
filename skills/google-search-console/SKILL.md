@@ -15,7 +15,7 @@ All commands output JSON to stdout. Errors go to stderr. Designed for Claude to 
 
 ## Before First Use
 
-1. **uv**: Run `which uv`. If missing, ask the user how they want to install it (`brew install uv`, `pipx install uv`, or https://docs.astral.sh/uv/getting-started/installation/).
+1. **uv**: Run `which uv`. If missing, ask the user how they want to install it (`brew install uv` or follow https://docs.astral.sh/uv/getting-started/installation/).
 2. **Project sync**: `uv sync --project <skill-dir>`
 3. **Auth**: See below.
 4. **PageSpeed API key**: See below.

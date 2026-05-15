@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. **uv**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+1. **uv**: install via `brew install uv`, `pipx install uv`, or follow https://docs.astral.sh/uv/getting-started/installation/. Ask the user first.
 2. **Project sync**: `uv sync --project <path-to-skills/google-search-console>`
 
 ## Google Cloud Platform Setup

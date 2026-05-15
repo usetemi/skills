@@ -2,24 +2,21 @@
 
 ## 1. Install rclone
 
-```bash
-# Ubuntu/Debian
-sudo apt install rclone
+Pick one -- ask the user before running anything that needs `sudo`:
 
-# macOS
-brew install rclone
-
-# Or from rclone.org
-curl https://rclone.org/install.sh | sudo bash
-```
+- Ubuntu/Debian: `sudo apt install rclone`
+- macOS: `brew install rclone`
+- Other platforms / latest version: https://rclone.org/install/
 
 Verify: `rclone version`
 
 ## 2. Install uv
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+Pick one -- ask the user before running anything that modifies their system:
+
+- macOS / Linux with Homebrew: `brew install uv`
+- pipx: `pipx install uv`
+- Other platforms: https://docs.astral.sh/uv/getting-started/installation/
 
 ## 3. Run gdrive auth
 

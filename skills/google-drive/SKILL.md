@@ -9,7 +9,23 @@ description: Manage Google Drive files with manifest-tracked push/pull workflows
 
 `gdrive` is a Python orchestrator CLI that uses **rclone** as its transport layer. rclone handles all Google Drive API communication -- OAuth, file transfers, format conversion, retry/rate-limiting. `gdrive` adds the intelligence on top: a manifest that tracks synced files, format-aware push/pull that re-imports Google Docs as native format, conflict detection, and multi-remote management. Think of rclone as the engine and gdrive as the driver.
 
-Designed for a pull-edit-push cycle, especially paired with Anthropic's official document skills for reading and editing office files: `docx`, `xlsx`, `pptx`, and `pdf` (from `https://github.com/anthropics/skills`).
+Designed for a pull-edit-push cycle, especially paired with document skills for reading and editing office files:
+
+- `docx`, `xlsx`, `pptx` -- Anthropic's official skills at https://github.com/anthropics/skills
+- `pdf` -- Anthropic's at https://github.com/anthropics/skills/tree/main/skills/pdf, or usetemi's `pdf` skill in this repo (`skills/pdf/`)
+
+If any of these aren't installed, suggest one of the following to the user (ask before running):
+
+```bash
+# Claude Code plugin marketplace -- adds the marketplace, then install individual skills from /plugin
+/plugin marketplace add anthropics/skills
+
+# skills.sh (Codex, Cursor, Gemini CLI, etc.) -- one command per skill
+npx skills add https://github.com/anthropics/skills --skill docx
+npx skills add https://github.com/anthropics/skills --skill xlsx
+npx skills add https://github.com/anthropics/skills --skill pptx
+npx skills add https://github.com/anthropics/skills --skill pdf
+```
 
 ## Before First Use
 

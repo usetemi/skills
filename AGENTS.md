@@ -3,6 +3,7 @@
 `usetemi/skills` is an open-source repository of agent skills published by [Temi](https://usetemi.com). Skills extend AI agents (Claude Code, Claude Cowork, Codex, Cursor, Gemini CLI, and others that support the [Agent Skills spec](https://agentskills.io)) with specialized knowledge, workflows, and tools.
 
 This repo serves both as:
+- A **Codex plugin marketplace** (`codex plugin marketplace add usetemi/skills`)
 - A **Claude Code plugin marketplace** (`/plugin marketplace add usetemi/skills`)
 - A **skills.sh-compatible** package (`npx skills add usetemi/skills`)
 
@@ -10,8 +11,12 @@ This repo serves both as:
 
 ```
 skills/
+├── .agents/plugins/
+│   └── marketplace.json    # Codex marketplace configuration
 ├── .claude-plugin/
 │   └── marketplace.json    # Claude Code marketplace configuration
+├── .codex-plugin/
+│   └── plugin.json         # Codex plugin manifest for the repo-root skills bundle
 ├── .github/workflows/
 │   ├── release.yml         # Per-skill zip artifacts on tag push
 │   └── copier-drift.yml    # Fails PRs where rendered files diverge from template/
@@ -48,7 +53,7 @@ References:
 - [skills.sh/anthropics/skills/skill-creator](https://skills.sh/anthropics/skills/skill-creator)
 - [SKILL.md source](https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md)
 
-After scaffolding, register the new skill in this repo: add its path to the `skills` array in `.claude-plugin/marketplace.json` and add a row to the table in `README.md`.
+After scaffolding, register the new skill in this repo: add its path to the `skills` array in `.claude-plugin/marketplace.json` and add a row to the table in `README.md`. The Codex plugin manifest points at `./skills/`, so new skills do not need a separate Codex plugin registration unless the root plugin metadata changes.
 
 ## Releasing
 
@@ -57,6 +62,9 @@ A `v*` tag (e.g. `v0.1.0`) triggers `.github/workflows/release.yml`, which zips 
 ## Distribution
 
 ```bash
+# Codex plugin marketplace
+codex plugin marketplace add usetemi/skills
+
 # Claude Code plugin marketplace
 /plugin marketplace add usetemi/skills
 /plugin install usetemi@usetemi

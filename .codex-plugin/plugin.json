@@ -1,0 +1,45 @@
+{
+  "name": "usetemi",
+  "version": "0.6.0",
+  "description": "Open-source agent skills from Temi for coding agents and other AI development tools.",
+  "author": {
+    "name": "Temi",
+    "url": "https://usetemi.com"
+  },
+  "homepage": "https://github.com/usetemi/skills",
+  "repository": "https://github.com/usetemi/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "agent-skills",
+    "codex",
+    "coding-agents",
+    "fly-io",
+    "tailscale",
+    "google-analytics",
+    "google-drive",
+    "google-search-console",
+    "pdf"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Temi Skills",
+    "shortDescription": "Open-source skills for coding agents",
+    "longDescription": "Use Temi Skills to extend Codex with practical workflows for infrastructure, documents, analytics, search, codebase legibility, writing cleanup, Node.js upgrades, PDF workflows, PR video receipts, Fly.io, and Tailscale.",
+    "developerName": "Temi",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://usetemi.com",
+    "defaultPrompt": [
+      "Use a Temi skill for this task.",
+      "Review this repo for agent legibility.",
+      "Troubleshoot this infrastructure setup."
+    ],
+    "brandColor": "#111111",
+    "screenshots": []
+  }
+}

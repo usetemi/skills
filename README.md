@@ -4,6 +4,20 @@
 
 ## Install
 
+### Codex
+
+In the Codex plugin UI, open **Plugins → Add Marketplace** and enter:
+
+```text
+usetemi/skills
+```
+
+Or from the CLI:
+
+```bash
+codex plugin marketplace add usetemi/skills
+```
+
 ### Claude Code
 
 ```bash
@@ -11,7 +25,7 @@
 /plugin install usetemi@usetemi
 ```
 
-### skills.sh (Codex, Cursor, Gemini CLI, 37+ others)
+### skills.sh (Cursor, Gemini CLI, Codex, 37+ others)
 
 ```bash
 npx skills add usetemi/skills

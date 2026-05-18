@@ -35,6 +35,7 @@ Each skill ships as a zip on the [latest release](https://github.com/usetemi/ski
 | [`node-26`](skills/node-26) | Upgrade and modernize Node.js projects for Node.js 26: Temporal, Map/WeakMap get-or-insert helpers, Iterator.concat, raw crypto key formats, removed APIs, and Current vs LTS rollout guidance. |
 | [`pdf`](skills/pdf) | Fill, redline, and generate PDFs with the right tool for the source. Auto-detects AcroForm vs flat PDFs, handles AES-encrypted government forms, navigates appearance-stream gotchas (`/NeedAppearances`, `/Ch` comboboxes, `/Sig` widgets, multi-page header carry-forward), and verifies output by rendering. |
 | [`pr-video-receipts`](skills/pr-video-receipts) | Set up Playwright `page.screencast` recordings of agent-driven smoke tests, uploaded as GitHub draft release assets and embedded inline in PR comments — automatic video evidence on every PR, garbage-collected on close. |
+| [`tailscale`](skills/tailscale) | Work across the Tailscale platform: connectivity, grants and ACLs, MagicDNS, Serve, Funnel, Services, app connectors, subnet routers, exit nodes, SSH, Kubernetes, containers, CI/CD automation, API/OAuth workflows, and production diagnostics. |
 
 Each skill folder is self-contained. `SKILL.md` is the entry point, with `references/` for deeper docs the agent loads on demand.
 

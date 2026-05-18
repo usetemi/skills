@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Open-source agent skills from Temi (usetemi.com)",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   "plugins": [
     {
@@ -23,7 +23,8 @@
         "./skills/humanize",
         "./skills/node-26",
         "./skills/pdf",
-        "./skills/pr-video-receipts"
+        "./skills/pr-video-receipts",
+        "./skills/tailscale"
       ]
     }
   ]

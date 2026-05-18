@@ -26,6 +26,7 @@ Each skill ships as a zip on the [latest release](https://github.com/usetemi/ski
 | Skill | What it does |
 |---|---|
 | [`ask-clarifying-questions`](skills/ask-clarifying-questions) | Run a structured interview before writing code — surface load-bearing assumptions in rounds of up to 4 questions, predict before asking, and stop on alignment, not count. Uses `AskUserQuestion` in Claude Code, `request_user_input` in Codex, plain prose as fallback. |
+| [`fly-io`](skills/fly-io) | Deploy, configure, troubleshoot, and architect Fly.io apps with production-grade defaults for flyctl, fly.toml, Machines, networking, volumes, Managed Postgres, Tigris, Redis, LiteFS, extensions, CI/CD, and Fly-specific gotchas. |
 | [`google-analytics`](skills/google-analytics) | Query GA4 reports, manage properties, streams, key events, audiences, and access bindings, and send Measurement Protocol events. Wraps the Data API, Admin API, and MP via the `ga4` CLI. |
 | [`google-drive`](skills/google-drive) | Sync Google Drive files with a manifest-tracked pull/push workflow. Re-imports Google Docs, Sheets, and Slides as native format on push. Works with shared drives. Wraps `rclone`. |
 | [`google-search-console`](skills/google-search-console) | Query Search Console analytics, inspect URL indexing, manage sitemaps, and run PageSpeed Insights audits. Wraps the GSC and PageSpeed APIs via the `gsc` CLI. |

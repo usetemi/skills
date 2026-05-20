@@ -34,12 +34,12 @@ Click **Enable** on each. No billing required for the APIs themselves.
 2. **Create Credentials → OAuth client ID**.
 3. If prompted, configure the OAuth consent screen. Choose **Internal** if only Workspace users in your own org need to auth, or **External** if any Google account needs to auth. Minimum fields are app name + support email.
 4. Back on the Credentials page: **Create Credentials → OAuth client ID → Desktop app**. Name it anything (e.g., `ga4 CLI`).
-5. **Download JSON** — save to a known path. Do NOT commit to git. Recommended path: `~/.config/ga4/client_secret.json`.
+5. **Download JSON** — save to a known path. Do NOT commit to git. Recommended path: `~/.config/skills/ga4/client_secret.json`.
 
 ## 3. Log in
 
 ```bash
-ga4 auth login --client-secret ~/.config/ga4/client_secret.json
+ga4 auth login --client-secret ~/.config/skills/ga4/client_secret.json
 ```
 
 Default scopes are `analytics.readonly`, `analytics.edit`, `analytics.manage.users`. Pass `--scope` (repeatable) to override. For advanced endpoints you need to include:
@@ -55,7 +55,7 @@ ssh -L 8086:localhost:8086 <this-host>
 
 Then run the auth command on the remote host and open the printed URL on a machine with a browser.
 
-Credentials land at `~/.config/ga4/credentials.json` and auto-refresh via the stored refresh token.
+Credentials land at `~/.config/skills/ga4/credentials.json` and auto-refresh via the stored refresh token.
 
 ## 4. Grant GA access to the Google account you just authed with
 
@@ -80,8 +80,8 @@ uv run --project /abs/path/to/skills/google-analytics ga4 doctor
 Expected output shape:
 
 ```
-  OK    config dir writable (~/.config/ga4)
-  OK    OAuth credentials present (~/.config/ga4/credentials.json)
+  OK    config dir writable (~/.config/skills/ga4)
+  OK    OAuth credentials present (~/.config/skills/ga4/credentials.json)
   OK    resolved credentials (Credentials)
   OK    Admin API reachable (N account(s) visible)
 All checks passed.
@@ -112,5 +112,5 @@ Accepts both numeric (`123456789`) and resource-name (`properties/123456789`) fo
 ## Rotating credentials
 
 - **Revoke a single token**: `ga4 auth logout` removes the local file. The refresh token remains valid on Google's side — revoke it explicitly at https://myaccount.google.com/permissions if you want to kill it everywhere.
-- **Move to a new machine**: copy `~/.config/ga4/credentials.json` to the new box (and the `client_secret.json` if you want to be able to re-auth without re-creating the client). Refresh tokens work cross-machine.
+- **Move to a new machine**: copy `~/.config/skills/ga4/credentials.json` to the new box (and the `client_secret.json` if you want to be able to re-auth without re-creating the client). Refresh tokens work cross-machine.
 - **Rotate the OAuth client**: create a new Desktop client, `ga4 auth logout`, `ga4 auth login --client-secret <new.json>`. Delete the old client in GCP afterwards.

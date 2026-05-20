@@ -13,6 +13,7 @@ and auto-refresh via the stored refresh token.{% if auth_module_extras %}
 from __future__ import annotations
 
 import json
+import os
 
 import click
 import google.auth.exceptions
@@ -50,7 +51,10 @@ def _load_credentials(scopes: list[str]) -> Credentials | None:
 
 def _save_credentials(creds: Credentials) -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    CREDENTIALS_PATH.write_text(creds.to_json())
+    fd = os.open(CREDENTIALS_PATH, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(creds.to_json())
+    CREDENTIALS_PATH.chmod(0o600)
 
 
 def get_credentials(scopes: list[str] | None = None) -> Credentials:
@@ -145,13 +149,26 @@ def status() -> None:
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
             info = {"authenticated": False, "reason": f"malformed credentials: {exc}"}
         else:
+            refreshed = False
+            refresh_error = None
+            if creds.expired and creds.refresh_token:
+                try:
+                    creds.refresh(Request())
+                    _save_credentials(creds)
+                    refreshed = True
+                except google.auth.exceptions.RefreshError as exc:
+                    refresh_error = f"refresh failed: {exc}"
             info = {
-                "authenticated": creds.valid or bool(creds.refresh_token),
+                "authenticated": creds.valid,
                 "valid": creds.valid,
                 "scopes": list(creds.scopes or []),
                 "expiry": creds.expiry.isoformat() if creds.expiry else None,
                 "has_refresh_token": bool(creds.refresh_token),
+                "refreshable": bool(creds.refresh_token) and refresh_error is None,
+                "refreshed": refreshed,
             }
+            if refresh_error:
+                info["reason"] = refresh_error
     if warning := _deprecation_warning():
         info["deprecation_warning"] = warning
     output_json(info)

@@ -16,6 +16,7 @@ from ga4.client import (
     collect_paged,
     handle_api_error,
     output_json,
+    parse_enum,
     proto_to_dict,
     require_yes,
 )
@@ -83,7 +84,14 @@ def key_events_create(
     """Create a key event."""
     parent = resolve_property(property_flag)
     client = admin_client_beta([SCOPE_EDIT])
-    event = KeyEvent(event_name=event_name, counting_method=counting_method)
+    event = KeyEvent(
+        event_name=event_name,
+        counting_method=parse_enum(
+            KeyEvent.CountingMethod,
+            counting_method,
+            field_name="counting-method",
+        ),
+    )
     if default_value is not None:
         if default_currency is None:
             raise click.ClickException(
@@ -122,7 +130,11 @@ def key_events_update(
     event = KeyEvent(name=name)
     mask_fields: dict = {}
     if counting_method is not None:
-        event.counting_method = counting_method
+        event.counting_method = parse_enum(
+            KeyEvent.CountingMethod,
+            counting_method,
+            field_name="counting-method",
+        )
         mask_fields["counting_method"] = counting_method
     if default_value is not None:
         if default_currency is None:

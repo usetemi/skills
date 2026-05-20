@@ -17,6 +17,7 @@ from ga4.client import (
     collect_paged,
     handle_api_error,
     output_json,
+    parse_enum,
     proto_to_dict,
     require_yes,
 )
@@ -91,9 +92,20 @@ def custom_metrics_create(
     metric = CustomMetric(
         parameter_name=parameter_name,
         display_name=display_name,
-        measurement_unit=measurement_unit,
-        scope=scope,
-        restricted_metric_type=list(restricted_metric_type),
+        measurement_unit=parse_enum(
+            CustomMetric.MeasurementUnit,
+            measurement_unit,
+            field_name="measurement-unit",
+        ),
+        scope=parse_enum(CustomMetric.MetricScope, scope, field_name="scope"),
+        restricted_metric_type=[
+            parse_enum(
+                CustomMetric.RestrictedMetricType,
+                value,
+                field_name="restricted-metric-type",
+            )
+            for value in restricted_metric_type
+        ],
     )
     if description is not None:
         metric.description = description
@@ -130,7 +142,11 @@ def custom_metrics_update(
     if description is not None:
         metric.description = description
     if measurement_unit is not None:
-        metric.measurement_unit = measurement_unit
+        metric.measurement_unit = parse_enum(
+            CustomMetric.MeasurementUnit,
+            measurement_unit,
+            field_name="measurement-unit",
+        )
     mask = build_update_mask(
         display_name=display_name,
         description=description,

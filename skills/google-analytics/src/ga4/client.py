@@ -13,6 +13,7 @@ by `handle_api_error()`.
 from __future__ import annotations
 
 import json
+from importlib import import_module
 from typing import Any
 
 import click
@@ -25,11 +26,12 @@ from google.analytics.admin_v1beta import (
 from google.analytics.data_v1alpha import AlphaAnalyticsDataClient
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.api_core import exceptions as gax
-from google.protobuf.field_mask_pb2 import FieldMask
 from google.protobuf.json_format import MessageToDict
 
 from ga4.auth import SCOPE_READONLY, get_credentials
 from ga4.common import output_json  # noqa: F401  (re-exported; callers import it from here)
+
+_FIELD_MASK_MODULE = import_module("google.protobuf.field_mask_pb2")
 
 # ---------- client factories ----------
 
@@ -65,13 +67,35 @@ def proto_to_dict(message: Any) -> dict:
     return MessageToDict(pb, preserving_proto_field_name=True)
 
 
-def build_update_mask(**fields: Any) -> FieldMask:
+def make_field_mask(paths: list[str]) -> Any:
+    """Build a protobuf FieldMask without relying on generated typing stubs."""
+    return vars(_FIELD_MASK_MODULE)["FieldMask"](paths=paths)
+
+
+def field_mask_from_csv(value: str) -> Any:
+    """Build a protobuf FieldMask from a comma-separated field path string."""
+    return make_field_mask([p.strip() for p in value.split(",") if p.strip()])
+
+
+def build_update_mask(**fields: Any) -> Any:
     """Build a FieldMask from kwargs, including only keys whose values are not None.
 
     Example: build_update_mask(display_name="Foo", time_zone=None) → mask with ["display_name"].
     """
     paths = [key for key, value in fields.items() if value is not None]
-    return FieldMask(paths=paths)
+    return make_field_mask(paths)
+
+
+def parse_enum(enum_type: Any, value: str, *, field_name: str) -> Any:
+    """Parse an enum name accepted by the CLI into the generated proto enum value."""
+    members = getattr(enum_type, "__members__", {})
+    normalized = value.strip().upper()
+    if normalized in members:
+        return members[normalized]
+    valid = ", ".join(members)
+    raise click.ClickException(
+        f"Invalid {field_name} {value!r}. Valid values: {valid}",
+    )
 
 
 def collect_paged(pager: Any, max_results: int | None = None) -> list[dict]:

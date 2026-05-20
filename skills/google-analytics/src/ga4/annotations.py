@@ -18,9 +18,11 @@ from ga4.client import (
     admin_client_alpha,
     build_update_mask,
     collect_paged,
+    field_mask_from_csv,
     handle_api_error,
     load_json_arg,
     output_json,
+    parse_enum,
     proto_to_dict,
     require_yes,
 )
@@ -108,7 +110,11 @@ def annotations_create(
         if description is not None:
             annotation.description = description
         if color is not None:
-            annotation.color = color
+            annotation.color = parse_enum(
+                ReportingDataAnnotation.Color,
+                color,
+                field_name="color",
+            )
         if annotation_date and (start_date or end_date):
             raise click.ClickException(
                 "Pass either --annotation-date OR --start-date/--end-date, not both.",
@@ -153,8 +159,6 @@ def annotations_update(
     update_mask: str | None,
 ) -> None:
     """Update an annotation. Alpha."""
-    from google.protobuf.field_mask_pb2 import FieldMask
-
     name = _annotation_name(resolve_property(property_flag), annotation_id)
     client = admin_client_alpha([SCOPE_EDIT])
     if body_json:
@@ -170,9 +174,13 @@ def annotations_update(
         if description is not None:
             annotation.description = description
         if color is not None:
-            annotation.color = color
+            annotation.color = parse_enum(
+                ReportingDataAnnotation.Color,
+                color,
+                field_name="color",
+            )
     if update_mask:
-        mask = FieldMask(paths=[p.strip() for p in update_mask.split(",") if p.strip()])
+        mask = field_mask_from_csv(update_mask)
     else:
         mask = build_update_mask(title=title, description=description, color=color)
         if not mask.paths:

@@ -23,6 +23,7 @@ from google.analytics.data_v1beta import (
     BatchRunPivotReportsRequest,
     BatchRunReportsRequest,
     CheckCompatibilityRequest,
+    Compatibility,
     DateRange,
     Dimension,
     GetMetadataRequest,
@@ -43,6 +44,7 @@ from ga4.client import (
     handle_api_error,
     load_json_arg,
     output_json,
+    parse_enum,
     proto_to_dict,
     split_csv,
 )
@@ -353,7 +355,11 @@ def data_check_compatibility(
         metrics=[Metric(name=m) for m in metric_list],
     )
     if compatibility_filter:
-        request.compatibility_filter = compatibility_filter
+        request.compatibility_filter = parse_enum(
+            Compatibility,
+            compatibility_filter,
+            field_name="compatibility-filter",
+        )
     _apply_filters(
         request, dimension_filter_json=dimension_filter_json,
         metric_filter_json=metric_filter_json,

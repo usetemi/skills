@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 import click
+from google.analytics.admin_v1alpha import (
+    GoogleSignalsConsent,
+    GoogleSignalsSettings,
+    GoogleSignalsState,
+)
 from google.analytics.admin_v1beta import (
+    AcknowledgeUserDataCollectionRequest,
     DataRetentionSettings,
+    IndustryCategory,
     ListPropertiesRequest,
     Property,
+    PropertyType,
     SearchChangeHistoryEventsRequest,
 )
 from google.api_core import exceptions as gax
@@ -18,9 +26,11 @@ from ga4.client import (
     admin_client_beta,
     build_update_mask,
     collect_paged,
+    field_mask_from_csv,
     handle_api_error,
     load_json_arg,
     output_json,
+    parse_enum,
     proto_to_dict,
     require_yes,
 )
@@ -114,9 +124,17 @@ def properties_create(
     if currency_code is not None:
         prop.currency_code = currency_code
     if industry_category is not None:
-        prop.industry_category = industry_category
+        prop.industry_category = parse_enum(
+            IndustryCategory,
+            industry_category,
+            field_name="industry-category",
+        )
     if property_type is not None:
-        prop.property_type = property_type
+        prop.property_type = parse_enum(
+            PropertyType,
+            property_type,
+            field_name="property-type",
+        )
     try:
         result = client.create_property(property=prop)
         output_json({"status": "created", "property": proto_to_dict(result)})
@@ -161,11 +179,14 @@ def properties_update(
         if currency_code is not None:
             prop.currency_code = currency_code
         if industry_category is not None:
-            prop.industry_category = industry_category
+            prop.industry_category = parse_enum(
+                IndustryCategory,
+                industry_category,
+                field_name="industry-category",
+            )
 
     if update_mask:
-        from google.protobuf.field_mask_pb2 import FieldMask
-        mask = FieldMask(paths=[p.strip() for p in update_mask.split(",") if p.strip()])
+        mask = field_mask_from_csv(update_mask)
     else:
         mask = build_update_mask(
             display_name=display_name,
@@ -210,8 +231,12 @@ def properties_acknowledge_user_data(property_flag: str | None, acknowledgement:
     name = resolve_property(property_flag)
     client = admin_client_beta([SCOPE_EDIT])
     try:
+        request = AcknowledgeUserDataCollectionRequest(
+            property=name,
+            acknowledgement=acknowledgement,
+        )
         response = client.acknowledge_user_data_collection(
-            property=name, acknowledgement=acknowledgement,
+            request=request,
         )
         output_json({"status": "acknowledged", "response": proto_to_dict(response)})
     except gax.GoogleAPIError as exc:
@@ -252,7 +277,11 @@ def properties_update_data_retention(
     client = admin_client_beta([SCOPE_EDIT])
     settings = DataRetentionSettings(name=f"{name}/dataRetentionSettings")
     if event_data_retention is not None:
-        settings.event_data_retention = event_data_retention
+        settings.event_data_retention = parse_enum(
+            DataRetentionSettings.RetentionDuration,
+            event_data_retention,
+            field_name="event-data-retention",
+        )
     if reset_user_data_on_new_activity is not None:
         settings.reset_user_data_on_new_activity = reset_user_data_on_new_activity
     update_mask = build_update_mask(
@@ -294,7 +323,6 @@ def properties_update_attribution_settings(
 ) -> None:
     """Update attribution settings. Alpha."""
     from google.analytics.admin_v1alpha import AttributionSettings
-    from google.protobuf.field_mask_pb2 import FieldMask
 
     name = resolve_property(property_flag)
     body = load_json_arg(body_json)
@@ -302,7 +330,7 @@ def properties_update_attribution_settings(
         raise click.ClickException("--body-json must be a JSON object.")
     body["name"] = f"{name}/attributionSettings"
     settings = AttributionSettings(mapping=body)
-    mask = FieldMask(paths=[p.strip() for p in update_mask.split(",") if p.strip()])
+    mask = field_mask_from_csv(update_mask)
     client = admin_client_alpha([SCOPE_EDIT])
     try:
         result = client.update_attribution_settings(
@@ -344,9 +372,6 @@ def properties_update_signals_settings(
     update_mask: str | None,
 ) -> None:
     """Update Google Signals settings. Alpha."""
-    from google.analytics.admin_v1alpha import GoogleSignalsSettings
-    from google.protobuf.field_mask_pb2 import FieldMask
-
     name = resolve_property(property_flag)
     if body_json:
         body = load_json_arg(body_json)
@@ -357,11 +382,19 @@ def properties_update_signals_settings(
     else:
         settings = GoogleSignalsSettings(name=f"{name}/googleSignalsSettings")
         if state is not None:
-            settings.state = state
+            settings.state = parse_enum(
+                GoogleSignalsState,
+                state,
+                field_name="state",
+            )
         if consent is not None:
-            settings.consent = consent
+            settings.consent = parse_enum(
+                GoogleSignalsConsent,
+                consent,
+                field_name="consent",
+            )
     if update_mask:
-        mask = FieldMask(paths=[p.strip() for p in update_mask.split(",") if p.strip()])
+        mask = field_mask_from_csv(update_mask)
     else:
         mask = build_update_mask(state=state, consent=consent)
         if not mask.paths:

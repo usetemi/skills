@@ -15,6 +15,7 @@ from ga4.client import (
     admin_client_beta,
     build_update_mask,
     collect_paged,
+    field_mask_from_csv,
     handle_api_error,
     load_json_arg,
     output_json,
@@ -133,8 +134,6 @@ def data_streams_update(
     update_mask: str | None,
 ) -> None:
     """Update a data stream."""
-    from google.protobuf.field_mask_pb2 import FieldMask
-
     name = _stream_name(resolve_property(property_flag), stream_id)
     client = admin_client_beta([SCOPE_EDIT])
     if body_json:
@@ -148,7 +147,7 @@ def data_streams_update(
         if display_name is not None:
             stream.display_name = display_name
     if update_mask:
-        mask = FieldMask(paths=[p.strip() for p in update_mask.split(",") if p.strip()])
+        mask = field_mask_from_csv(update_mask)
     else:
         mask = build_update_mask(display_name=display_name)
         if not mask.paths:
@@ -218,7 +217,6 @@ def data_streams_update_enhanced_measurement(
 ) -> None:
     """Update enhanced measurement settings. Alpha."""
     from google.analytics.admin_v1alpha import EnhancedMeasurementSettings
-    from google.protobuf.field_mask_pb2 import FieldMask
 
     name = _stream_name(resolve_property(property_flag), stream_id)
     body = load_json_arg(body_json)
@@ -226,7 +224,7 @@ def data_streams_update_enhanced_measurement(
         raise click.ClickException("--body-json must be a JSON object.")
     body["name"] = f"{name}/enhancedMeasurementSettings"
     settings = EnhancedMeasurementSettings(mapping=body)
-    mask = FieldMask(paths=[p.strip() for p in update_mask.split(",") if p.strip()])
+    mask = field_mask_from_csv(update_mask)
     client = admin_client_alpha([SCOPE_EDIT])
     try:
         result = client.update_enhanced_measurement_settings(
@@ -261,7 +259,6 @@ def data_streams_update_data_redaction(
 ) -> None:
     """Update data redaction settings. Alpha."""
     from google.analytics.admin_v1alpha import DataRedactionSettings
-    from google.protobuf.field_mask_pb2 import FieldMask
 
     name = _stream_name(resolve_property(property_flag), stream_id)
     body = load_json_arg(body_json)
@@ -269,7 +266,7 @@ def data_streams_update_data_redaction(
         raise click.ClickException("--body-json must be a JSON object.")
     body["name"] = f"{name}/dataRedactionSettings"
     settings = DataRedactionSettings(mapping=body)
-    mask = FieldMask(paths=[p.strip() for p in update_mask.split(",") if p.strip()])
+    mask = field_mask_from_csv(update_mask)
     client = admin_client_alpha([SCOPE_EDIT])
     try:
         result = client.update_data_redaction_settings(

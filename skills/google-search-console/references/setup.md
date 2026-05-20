@@ -40,7 +40,7 @@ uv run --project <path> gsc auth login --client-secret /path/to/client_secret.js
 ```
 
 This opens a browser for OAuth consent. After authorizing, credentials are stored at:
-`~/.config/gsc/credentials.json`
+`~/.config/skills/gsc/credentials.json`
 
 ### 5. Headless Machine Setup
 

@@ -20,6 +20,7 @@ from ga4.client import (
     admin_client_beta,
     build_update_mask,
     collect_paged,
+    field_mask_from_csv,
     handle_api_error,
     load_json_arg,
     output_json,
@@ -262,7 +263,6 @@ def links_bigquery_update(
 ) -> None:
     """Update a BigQuery link. Alpha."""
     from google.analytics.admin_v1alpha import BigQueryLink
-    from google.protobuf.field_mask_pb2 import FieldMask
 
     name = _link_name(resolve_property(property_flag), "bigQueryLinks", link_id)
     body = load_json_arg(body_json)
@@ -270,7 +270,7 @@ def links_bigquery_update(
         raise click.ClickException("--body-json must be a JSON object.")
     body["name"] = name
     link = BigQueryLink(mapping=body)
-    mask = FieldMask(paths=[p.strip() for p in update_mask.split(",") if p.strip()])
+    mask = field_mask_from_csv(update_mask)
     client = admin_client_alpha([SCOPE_EDIT])
     try:
         result = client.update_big_query_link(bigquery_link=link, update_mask=mask)

@@ -2,7 +2,7 @@
 
 Copier template that renders shared modules into the google-* skills under `skills/`. The skill template (`SKILL.md`) lives here too as the starting scaffold for new skills, but it's unrelated to Copier.
 
-Currently templated: `__init__.py`, `__main__.py`, `auth.py` (only when `uses_oauth: true`). `config.py` and the planned shared `common.py` / `doctor_helpers.py` are out of scope for now and live hand-written in each skill.
+Currently templated: `__init__.py`, `__main__.py`, `common.py`, `doctor_helpers.py` (only when `has_doctor: true`), and `auth.py` (only when `uses_oauth: true`). `config.py` lives hand-written in each skill.
 
 ## Layout
 
@@ -13,7 +13,11 @@ template/
   src/{{ pkg }}/
     __init__.py.jinja
     __main__.py.jinja
-    auth.py.jinja                       # Skipped when uses_oauth is false
+    common.py.jinja
+    {{ 'auth.py' if uses_oauth else '.copier-skip-auth.py' }}.jinja
+                                        # Skipped when uses_oauth is false
+    {{ 'doctor_helpers.py' if has_doctor else '.copier-skip-doctor_helpers.py' }}.jinja
+                                        # Skipped when has_doctor is false
   bootstraps/                           # Per-skill substitution data, used at first copy
     ga4.yml
     gsc.yml
@@ -60,7 +64,7 @@ CI runs the same invocation per skill on every PR that touches `template/**` or 
 ## Adding a new templated module
 
 1. Drop a new `.jinja` file in `src/{{ pkg }}/`.
-2. If it should be skipped for some skills, add an `_exclude` entry in `copier.yml` — match against the rendered (post-Jinja) destination path, not the `.jinja` source path. Patterns are themselves Jinja-rendered, so `"{% if not uses_oauth %}src/{{ pkg }}/auth.py{% endif %}"` works.
+2. If it should be skipped for some skills, render the filename to a hidden `.copier-skip-*` destination when disabled, then rely on the static `_exclude` entry in `copier.yml`. Copier 9.5 does not render `_exclude` patterns, so do not put Jinja conditionals in `_exclude`.
 3. Run `copier update --defaults --trust` in each skill that should consume it; add a `.copier-answers.yml` if the skill is brand new.
 
 ## Adding a new skill

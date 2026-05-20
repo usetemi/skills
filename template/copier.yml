@@ -20,11 +20,8 @@ _exclude:
   - "README.md"
   - "bootstraps"
   - "bootstraps/**"
-  # Skills with uses_oauth=false (e.g., gdrive) skip auth.py.
-  # Match the rendered path (without `.jinja`).
-  - "{% if not uses_oauth %}src/{{ pkg }}/auth.py{% endif %}"
-  # Skills without a doctor command (e.g., gsc) skip doctor_helpers.py.
-  - "{% if not has_doctor %}src/{{ pkg }}/doctor_helpers.py{% endif %}"
+  # Conditional module templates render disabled modules to hidden skip paths.
+  - "**/.copier-skip-*"
 
 # --- Identity --------------------------------------------------------------
 

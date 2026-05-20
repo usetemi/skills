@@ -61,6 +61,6 @@ root = ["./src"]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15.12",
-    "ty>=0.0.33",
+    "ruff>=0.15.13",
+    "ty>=0.0.38",
 ]

@@ -8,6 +8,11 @@ Official docs:
 - Tigris: https://fly.io/docs/tigris/
 - Upstash Redis: https://fly.io/docs/upstash/redis/
 - LiteFS: https://fly.io/docs/litefs/
+- Litestream: https://litestream.io/
+- Litestream on Tigris: https://litestream.io/guides/tigris/
+- Litestream in Docker: https://litestream.io/guides/docker/
+- Litestream tips: https://litestream.io/tips/
+- Fly Prisma SQLite: https://fly.io/docs/js/prisma/sqlite/
 
 ## Storage Decision Defaults
 
@@ -17,6 +22,8 @@ Official docs:
   explicitly required.
 - Durable local files: use Fly Volumes only when the app understands local
   storage, replication, and backups.
+- SQLite with restore-based durability: use a Fly Volume plus Litestream to
+  Tigris for simple single-writer apps.
 - SQLite at the edge: consider LiteFS only with care, off-site backups, and
   autostop/autostart disabled.
 
@@ -124,6 +131,43 @@ fly storage destroy <bucket>
 
 Check generated secrets and bucket region behavior in current docs before
 hardcoding SDK configuration. Prefer app secrets for keys and bucket names.
+
+## SQLite With Litestream
+
+Use Litestream when SQLite simplicity is a better fit than a separate database
+server and the app can tolerate restore-based recovery.
+
+Default Fly shape:
+
+- Store the database on a volume, usually `/data/<app>.db`.
+- Create Tigris storage with `fly storage create --app <app>` and use the
+  generated secrets.
+- For Prisma SQLite apps, inspect the `fly launch` generated Litestream setup
+  before replacing it.
+- Run Litestream with the app, typically `litestream replicate -exec "<cmd>"`.
+- Restore on boot with `litestream restore -if-db-not-exists -if-replica-exists
+  /data/<app>.db`, then start replication.
+
+Minimal replica shape:
+
+```yaml
+dbs:
+  - path: /data/<app>.db
+    replica:
+      url: s3://${BUCKET_NAME}?endpoint=fly.storage.tigris.dev&region=auto
+```
+
+SQLite pragmas and gotchas:
+
+- Litestream requires WAL mode and will enable it if the app has not.
+- Set `PRAGMA busy_timeout = 5000` on app connections.
+- Enable `PRAGMA foreign_keys = ON` on every app connection.
+- Use one writer for a database replica path. Multiple apps replicating to the
+  same bucket path can break restores.
+- Test restore before calling this production-ready.
+- Treat the default async replication window as possible data loss during a
+  catastrophic host failure.
+- Never put durable SQLite on the root filesystem or a network filesystem.
 
 ## Upstash Redis
 

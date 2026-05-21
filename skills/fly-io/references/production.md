@@ -75,6 +75,8 @@ Rules:
   and an external backup plan.
 - For Tigris, confirm bucket, credentials, lifecycle expectations, and whether
   objects replace any inappropriate volume use.
+- For SQLite with Litestream, confirm the volume, Tigris secrets, restore drill,
+  RPO/RTO, and replication logs or alerts.
 - For Redis, confirm it is cache/coordination unless the plan and app semantics
   deliberately make it durable state.
 - For LiteFS, confirm autostop/autostart is off, backups exist, and primary

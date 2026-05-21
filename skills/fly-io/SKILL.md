@@ -1,6 +1,6 @@
 ---
 name: fly-io
-description: Use when deploying, configuring, troubleshooting, reviewing, or architecting Fly.io apps and infrastructure. Covers flyctl, fly.toml, Fly Launch, Fly Machines, process groups, health checks, deployment strategies, private networking, 6PN, Flycast, Fly-Src app-to-app auth, egress IPs, volumes, Managed Postgres, Tigris, Redis, LiteFS, extensions, CI/CD, and production readiness.
+description: Use when deploying, configuring, troubleshooting, reviewing, or architecting Fly.io apps and infrastructure. Covers flyctl, fly.toml, Fly Launch, Fly Machines, process groups, health checks, deployment strategies, private networking, 6PN, Flycast, Fly-Src app-to-app auth, egress IPs, volumes, Managed Postgres, Tigris, Litestream, Redis, LiteFS, extensions, CI/CD, and production readiness.
 ---
 
 # Fly.io Platform
@@ -53,8 +53,8 @@ avoid presenting it as broadly documented platform surface.
   services, private services, custom private networks, request routing headers,
   `fly-replay`, Fly-Src request source auth, and static egress IPs.
 - Read `references/data-storage.md` for Managed Postgres, volumes,
-  auto-extension, snapshots, backups, Tigris, Upstash Redis, LiteFS, and
-  durability decisions.
+  auto-extension, snapshots, backups, Tigris, SQLite with Litestream, Upstash
+  Redis, LiteFS, and durability decisions.
 - Read `references/production.md` for production reviews, security, orgs,
   tokens, public IP audits, backups, monitoring, logging, and extensions.
 
@@ -68,6 +68,8 @@ avoid presenting it as broadly documented platform surface.
 - For production Postgres, prefer Managed Postgres (`fly mpg`) over legacy
   unmanaged Postgres.
 - For object storage, prefer Tigris.
+- For simple single-writer SQLite apps, use a Fly Volume plus Litestream to
+  Tigris when restore-based durability is acceptable.
 - For Redis, use Fly's Upstash integration unless the app has a clear reason to
   run its own Redis.
 - For private proxy-routed services, prefer Flycast over raw `.internal` when
@@ -100,6 +102,8 @@ avoid presenting it as broadly documented platform surface.
 - Release commands: they run in temporary Machines without attached volumes.
 - Egress: default outbound IPs are unstable. Allocate app-scoped egress IPs per
   region only when third parties require allowlisting.
+- Litestream: it is async backup/restore for SQLite, not HA, synchronous
+  replication, multi-writer SQLite, or automatic failover.
 - LiteFS: use with caution, keep off-site backups, and do not combine LiteFS
   with Fly Proxy autostop/autostart.
 - GPUs: do not recommend Fly GPUs for new work. Fly docs say GPUs are deprecated
@@ -108,9 +112,9 @@ avoid presenting it as broadly documented platform surface.
 ## Architecture Triggers
 
 Pause for Fly-specific architecture thinking when the prompt involves state,
-databases, volumes, private services, internal APIs, app-to-app auth, regions,
-tenants, queues, workers, egress allowlisting, HA, failover, production, or cost
-boundaries. In those cases, answer with:
+databases, SQLite, volumes, private services, internal APIs, app-to-app auth,
+regions, tenants, queues, workers, egress allowlisting, HA, failover, restore
+objectives, production, or cost boundaries. In those cases, answer with:
 
 1. The Fly-native recommendation.
 2. The exact commands or `fly.toml` shape.

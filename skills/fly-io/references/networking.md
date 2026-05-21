@@ -10,6 +10,12 @@ Official docs:
 - Dynamic request routing: https://fly.io/docs/networking/dynamic-request-routing/
 - Request headers: https://fly.io/docs/networking/request-headers/
 
+Fly-authored Fly-Src references:
+
+- Fly-Src announcement and Ruby example: https://community.fly.io/t/fly-src-authenticating-http-requests-between-fly-apps/20566
+- Expanded opt-in behavior: https://community.fly.io/t/more-fly-src-authenticating-http-requests-between-fly-apps/26147
+- Go parser: https://github.com/superfly/flysrc-go
+
 ## Decision Path
 
 1. Decide whether traffic is public, private direct, or private through Fly
@@ -25,6 +31,8 @@ Official docs:
 3. If fixed outbound IPs are required, use app-scoped egress IPs per region.
 4. If regional routing, tenant routing, or write-primary routing is involved,
    evaluate `fly-replay` and request headers.
+5. If an app needs to authorize another Fly app as the caller, evaluate
+   verified `Fly-Src` metadata before introducing shared internal tokens.
 
 ## Private Networking And 6PN
 
@@ -82,6 +90,55 @@ Requirements and gotchas:
 - If public IPs are also assigned, the same configured services are publicly
   exposed. Run `fly ips list` and release public IPs when the service must be
   private-only.
+
+## Fly-Src App-To-App Auth
+
+Use Fly-Src when a Fly HTTP service needs to authorize the calling Fly Machine,
+app, or organization. It is source authentication for Fly-originating requests,
+not a replacement for end-user auth, session auth, or third-party API auth.
+
+When Fly Proxy populates source metadata, the receiver sees:
+
+```text
+Fly-Src: instance=<machine-id>;app=<app-name>;org=<org-slug>;ts=<timestamp>
+Fly-Src-Signature: <base64-ed25519-signature>
+```
+
+Receiver behavior:
+
+- Require both `Fly-Src` and `Fly-Src-Signature` on protected internal routes.
+- Verify `Fly-Src-Signature` as a base64-encoded Ed25519 signature over the raw
+  `Fly-Src` header value.
+- Read the hex-encoded verification key from `/.fly/fly-src.pub` inside the
+  Machine.
+- Parse `instance`, `app`, `org`, and `ts` only after signature verification.
+- Reject stale timestamps; the Fly Ruby example uses a 10-second freshness
+  window.
+- Authorize against the expected `app` and `org`, not just the existence of a
+  valid signature.
+
+Request path rules:
+
+- Fly-Src was introduced for Flycast HTTP requests, where app-to-app traffic goes
+  through Fly Proxy.
+- Fly has also expanded Fly-Src to requests between Fly Machines over 6PN,
+  including Flycast.
+- For requests that do not go through Flycast, the caller must opt in by sending
+  `Fly-Src-OptIn: *`; Fly will not populate `Fly-Src` without that header.
+- This opt-in path is useful when a public Fly app should authenticate requests
+  from unrelated Fly Machines without provisioning a Flycast address.
+
+Security boundaries:
+
+- A raw `Fly-Src` header is not trustworthy. Other apps can reach services over
+  private networking paths and set arbitrary headers unless the receiver verifies
+  `Fly-Src-Signature`.
+- A valid signature proves Fly Proxy produced the source metadata, but it does
+  not prove the caller's application-level intent. Treat SSRF in a trusted
+  caller as a real risk because an attacker could cause that trusted app to emit
+  a request with valid source metadata.
+- Keep normal authorization logic narrow: allow only the specific source apps
+  and orgs expected for the route.
 
 ## Custom Private Networks
 

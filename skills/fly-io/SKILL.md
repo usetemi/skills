@@ -1,6 +1,6 @@
 ---
 name: fly-io
-description: Use when deploying, configuring, troubleshooting, reviewing, or architecting Fly.io apps and infrastructure. Covers flyctl, fly.toml, Fly Launch, Fly Machines, process groups, health checks, deployment strategies, private networking, 6PN, Flycast, egress IPs, volumes, Managed Postgres, Tigris, Redis, LiteFS, extensions, CI/CD, and production readiness.
+description: Use when deploying, configuring, troubleshooting, reviewing, or architecting Fly.io apps and infrastructure. Covers flyctl, fly.toml, Fly Launch, Fly Machines, process groups, health checks, deployment strategies, private networking, 6PN, Flycast, Fly-Src app-to-app auth, egress IPs, volumes, Managed Postgres, Tigris, Redis, LiteFS, extensions, CI/CD, and production readiness.
 ---
 
 # Fly.io Platform
@@ -9,7 +9,9 @@ Use this skill for any Fly.io work, including routine deploy/config changes and
 architecture decisions for apps known to run on Fly.
 
 Fly changes quickly. Ground decisions in the local CLI and current official docs
-before making version-sensitive claims.
+before making version-sensitive claims. When a Fly-authored feature is only
+documented in Fly forum announcements or official example repos, say so and
+avoid presenting it as broadly documented platform surface.
 
 ## First Steps
 
@@ -37,9 +39,10 @@ before making version-sensitive claims.
    fly checks list
    ```
 
-4. Use official Fly docs as the source of truth for unstable details. Do not use
-   community posts as encoded facts unless the user explicitly asks for forum
-   research.
+4. Use official Fly docs as the source of truth for unstable details. Do not
+   use arbitrary community posts as encoded facts. For Fly-Src, use the
+   Fly-authored forum announcements and official example repo linked from
+   `references/networking.md`, and state that limitation when it matters.
 
 ## Reference Routing
 
@@ -48,7 +51,7 @@ before making version-sensitive claims.
   config validation.
 - Read `references/networking.md` for 6PN, `.internal`, Flycast, public
   services, private services, custom private networks, request routing headers,
-  `fly-replay`, and static egress IPs.
+  `fly-replay`, Fly-Src request source auth, and static egress IPs.
 - Read `references/data-storage.md` for Managed Postgres, volumes,
   auto-extension, snapshots, backups, Tigris, Upstash Redis, LiteFS, and
   durability decisions.
@@ -70,6 +73,9 @@ before making version-sensitive claims.
 - For private proxy-routed services, prefer Flycast over raw `.internal` when
   the service needs Fly Proxy behavior such as autostart, load balancing, TLS,
   PROXY protocol, or DNS-hostile clients.
+- For Fly app-to-app HTTP origin checks, use verified `Fly-Src` metadata when
+  the request path goes through Fly Proxy and caller identity is the auth
+  boundary. Do not replace user auth or third-party auth with Fly-Src.
 - For fixed outbound allowlisting, prefer app-scoped static egress IPs with
   `fly ips allocate-egress`; do not recommend legacy machine-scoped egress IPs
   for new work.
@@ -80,6 +86,8 @@ before making version-sensitive claims.
   interchangeable. Volumes are local NVMe slices, not replicated network disks.
 - Network exposure: a service in `fly.toml` plus public IPs exposes that service
   publicly, even if the intended consumer is private or Flycast.
+- Fly-Src: never trust `Fly-Src` without verifying `Fly-Src-Signature` against
+  `/.fly/fly-src.pub`, and check timestamp freshness before authorizing.
 - CLI surprises: current `fly launch --no-deploy` can also offer GitHub Actions
   setup in GitHub repos; use `--no-github-workflow` when that automation is not
   wanted.
@@ -100,9 +108,9 @@ before making version-sensitive claims.
 ## Architecture Triggers
 
 Pause for Fly-specific architecture thinking when the prompt involves state,
-databases, volumes, private services, regions, tenants, queues, workers, egress
-allowlisting, HA, failover, production, or cost boundaries. In those cases,
-answer with:
+databases, volumes, private services, internal APIs, app-to-app auth, regions,
+tenants, queues, workers, egress allowlisting, HA, failover, production, or cost
+boundaries. In those cases, answer with:
 
 1. The Fly-native recommendation.
 2. The exact commands or `fly.toml` shape.

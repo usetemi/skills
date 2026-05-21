@@ -1,82 +1,71 @@
 # template/
 
-Copier template that renders shared modules into the google-* skills under `skills/`. The skill template (`SKILL.md`) lives here too as the starting scaffold for new skills, but it's unrelated to Copier.
+Directory-scoped guide for the Copier template that renders shared Python modules
+into the google-* skills under `skills/`. Use the top-level `AGENTS.md` for general
+repo workflow; load this file only when editing `template/**` or rendered modules
+that come from this template.
 
-Currently templated: `__init__.py`, `__main__.py`, `common.py`, `doctor_helpers.py` (only when `has_doctor: true`), and `auth.py` (only when `uses_oauth: true`). `config.py` lives hand-written in each skill.
+## Scope
 
-## Layout
-
-```
-template/
-  copier.yml                            # Copier config + variables
-  {{ _copier_conf.answers_file }}.jinja # Renders the per-skill .copier-answers.yml
-  src/{{ pkg }}/
-    __init__.py.jinja
-    __main__.py.jinja
-    common.py.jinja
-    {{ 'auth.py' if uses_oauth else '.copier-skip-auth.py' }}.jinja
-                                        # Skipped when uses_oauth is false
-    {{ 'doctor_helpers.py' if has_doctor else '.copier-skip-doctor_helpers.py' }}.jinja
-                                        # Skipped when has_doctor is false
-  bootstraps/                           # Per-skill substitution data, used at first copy
-    ga4.yml
-    gsc.yml
-    gdrive.yml
-```
-
-Each consuming skill keeps a `.copier-answers.yml` at its root recording which template version was used and what variable values were supplied. `copier update` reads it and re-renders.
-
-## Variables
-
-| Variable | Type | Purpose |
-| --- | --- | --- |
-| `pkg` | str | Python package name (`ga4`). Used in import paths and the `src/<pkg>/` directory name. |
-| `cmd` | str | CLI entry command (`ga4`). Almost always equal to `pkg`; exposed as a separate variable in case a skill ever needs them to differ. |
-| `config_dir_name` | str | Subdirectory under `~/.config/skills/` for this skill's state. |
-| `env_var_config_dir` | str | Env var override for the config dir (e.g. `GA4_CONFIG_DIR`). |
-| `description` | str | One-line description used in module docstrings. |
-| `uses_oauth` | bool | Skip `auth.py` if false (e.g. gdrive uses rclone, not the Google OAuth Desktop flow). |
-| `default_oauth_port` | int | Local port for the OAuth callback. Must differ between skills running concurrently. |
-| `scopes_block` | str (multiline) | Verbatim Python block defining `SCOPE_*` constants and `DEFAULT_LOGIN_SCOPES`. Inlined into `auth.py`. |
-| `default_credential_scope` | str | Name of the `SCOPE_*` constant used as the read-only default in `get_credentials()` and `whoami` (e.g. `SCOPE_READONLY`). |
-| `login_default_help` | str | Help text suffix for the `--scope` flag's default value. |
-| `auth_module_extras` | str (multiline) | Optional extra paragraphs appended to `auth.py`'s module docstring. Use for skill-specific notes (e.g. ga4's ADC paragraph). |
+- `template/copier.yml` owns the current variables, exclusions, and Copier
+  behavior. Check it directly instead of duplicating a variable index here.
+- `src/{{ pkg }}/` contains the Jinja templates rendered into consuming skills.
+- `bootstraps/` contains substitution data for first-time renders of new
+  templated skills.
+- Each consuming skill records its substitutions in `.copier-answers.yml`.
 
 ## Constraint: no skill-name branching
 
-Templates contain only Python + `{{ variable }}` substitutions. **Never** write `{% if pkg == 'ga4' %}` or any other skill-name-aware branching. Variation that doesn't fit a single rendered shape goes into a substitution variable (e.g. `scopes_block` is verbatim Python that ga4 and gsc each fill in differently).
+Templates contain only Python plus `{{ variable }}` substitutions. Never write
+`{% if pkg == 'ga4' %}` or any other branch that knows a consuming skill by name.
 
-If new variation can't be expressed via a substitution, the right move is usually to leave that file out of the template and let each skill carry its own copy.
+Skill-specific variation should be expressed through substitution variables. If a
+variation does not fit a common rendered shape, leave that file out of the
+template and let each skill carry its own copy.
 
 ## Authoring workflow
 
-1. Edit a `.jinja` template under `src/{{ pkg }}/`.
-2. From each consuming skill's directory, re-render using its own answers file as the data source:
+1. Edit the relevant `.jinja` template under `src/{{ pkg }}/`.
+2. From each affected consuming skill's directory, re-render using its recorded
+   answers:
    ```bash
    copier copy --data-file .copier-answers.yml --defaults --trust --overwrite ../../template .
    ```
-3. `git diff` shows the propagated change. Commit the template change and the regenerated outputs together.
+3. Review `git diff` and commit the template change with the regenerated outputs.
 
-CI runs the same invocation per skill on every PR that touches `template/**` or `skills/**`; a non-empty `git diff` after the re-render fails the check (`copier-drift.yml`).
+Use `copier copy --overwrite`, not `copier update`: `copier update` expects the
+template to be a standalone Git repo, but this template lives inside the parent
+repository.
 
-**Why `copier copy --overwrite` instead of `copier update`:** `copier update` requires the template to be a stand-alone Git repo so it can record and compare commit hashes in `.copier-answers.yml`. Our template lives at `template/` inside this repo, so we instead use `copier copy --overwrite` driven by the skill's existing answers file. The result is identical: re-render in place using the recorded answers.
+## Adding a templated module
 
-## Adding a new templated module
-
-1. Drop a new `.jinja` file in `src/{{ pkg }}/`.
-2. If it should be skipped for some skills, render the filename to a hidden `.copier-skip-*` destination when disabled, then rely on the static `_exclude` entry in `copier.yml`. Copier 9.5 does not render `_exclude` patterns, so do not put Jinja conditionals in `_exclude`.
-3. Run `copier update --defaults --trust` in each skill that should consume it; add a `.copier-answers.yml` if the skill is brand new.
-
-## Adding a new skill
-
-1. Write `bootstraps/<name>.yml` with the substitutions for that skill.
-2. From the skill's destination dir, run:
+1. Add the new `.jinja` file under `src/{{ pkg }}/`.
+2. If the module should be skipped for some skills, render the disabled filename
+   to a hidden `.copier-skip-*` destination and rely on the static `_exclude`
+   entry in `copier.yml`. Copier does not render `_exclude` patterns.
+3. From each skill that should consume the module, run:
+   ```bash
+   copier copy --data-file .copier-answers.yml --defaults --trust --overwrite ../../template .
    ```
+
+## Adding a new templated skill
+
+1. Add `bootstraps/<name>.yml` with the substitutions for the new skill.
+2. From the skill's destination directory, run:
+   ```bash
    copier copy --data-file ../../template/bootstraps/<name>.yml --trust --defaults --overwrite ../../template .
    ```
-   The relative `../../template` source path keeps the recorded `_src_path` portable across machines.
-3. Register the new skill in `.claude-plugin/marketplace.json` and `README.md` per the top-level AGENTS.md.
+   The relative `../../template` source path keeps the recorded `_src_path`
+   portable across machines.
+3. Register the skill in `.claude-plugin/marketplace.json` and `README.md` per the
+   top-level `AGENTS.md`.
 
-## Bumping copier itself
+## Validation
 
-Copier is installed via `uv tool install copier` (or `pipx install copier`); the CI workflow uses `pipx install copier`. There's no pin — the template should stay compatible with current Copier. If a template feature requires a minimum Copier version, set `_min_copier_version` in `copier.yml`.
+- Re-render every affected skill that has a `.copier-answers.yml` file.
+- If rendered Python changed, run:
+  ```bash
+  uv run --project skills/<skill> ruff check .
+  uv run --project skills/<skill> ty check
+  ```
+- Run `git diff --check` before finishing.

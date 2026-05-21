@@ -1,74 +1,59 @@
 # Skills Repository
 
-`usetemi/skills` is an open-source repository of agent skills published by [Temi](https://usetemi.com). Skills extend AI agents (Claude Code, Claude Cowork, Codex, Cursor, Gemini CLI, and others that support the [Agent Skills spec](https://agentskills.io)) with specialized knowledge, workflows, and tools.
+`usetemi/skills` publishes Temi agent skills for coding agents and tools that
+support the Agent Skills spec. Keep this file focused on instructions agents need
+while changing the repo; keep public install, catalog, and distribution copy in
+`README.md`.
 
-This repo serves both as:
-- A **Codex plugin marketplace** (`codex plugin marketplace add usetemi/skills`)
-- A **Claude Code plugin marketplace** (`/plugin marketplace add usetemi/skills`)
-- A **skills.sh-compatible** package (`npx skills add usetemi/skills`)
+## Orientation
 
-## Repository Structure
+- Each skill is self-contained under `skills/<name>/`. `SKILL.md` is the required
+  entry point; deeper references should live inside the skill and be loaded only
+  when the task calls for them.
+- `README.md` is the canonical public catalog and install guide. Update it when a
+  skill is added, removed, renamed, or its public description changes.
+- Plugin and marketplace metadata lives under `.claude-plugin/`,
+  `.codex-plugin/`, and `.agents/plugins/`. Touch those files only for registration
+  or metadata changes.
+- `template/` renders shared Python modules for the google-* CLI skills. Read
+  `template/AGENTS.md` before editing the Copier template or any file generated
+  from it.
 
-```
-skills/
-├── .agents/plugins/
-│   └── marketplace.json    # Codex marketplace configuration
-├── .claude-plugin/
-│   └── marketplace.json    # Claude Code marketplace configuration
-├── .codex-plugin/
-│   └── plugin.json         # Codex plugin manifest for the repo-root skills bundle
-├── .github/workflows/
-│   ├── release.yml         # Per-skill zip artifacts on tag push
-│   └── copier-drift.yml    # Fails PRs where rendered files diverge from template/
-├── skills/                 # All skills live here
-│   └── <skill-name>/
-│       ├── SKILL.md        # Required entry point
-│       └── .copier-answers.yml  # (google-* skills) Copier substitutions for templated modules
-├── template/
-│   ├── SKILL.md            # Starting template for new skills
-│   ├── copier.yml          # Copier template config — see template/AGENTS.md
-│   └── src/{{ pkg }}/      # Jinja templates rendered into each consuming skill
-└── AGENTS.md               # This file (shared agent instructions)
-```
+## Skill Changes
 
-## Shared modules across the google-* skills
+- When adding a new skill, create `skills/<name>/SKILL.md` and keep the skill
+  directory self-contained.
+- Register new skills in `.claude-plugin/marketplace.json` and add a row to the
+  `README.md` skill table.
+- Codex discovers skills from `./skills/` via `.codex-plugin/plugin.json`, so new
+  skills do not need per-skill Codex registration unless root plugin metadata
+  changes.
+- Do not document capabilities that are not implemented in the skill.
 
-`template/` is also a [Copier](https://copier.readthedocs.io/) template that renders shared modules (`__init__.py`, `__main__.py`, `auth.py`) into each google-* skill. Each consuming skill carries a `.copier-answers.yml` recording its substitution values. To re-render after editing a template, run from inside the skill's directory:
+## Copier-Rendered Google Skills
+
+The google-* Python CLI skills share modules rendered from `template/`. If you
+change a template or a rendered shared module, re-render each affected consuming
+skill from that skill's directory:
 
 ```bash
 copier copy --data-file .copier-answers.yml --defaults --trust --overwrite ../../template .
 ```
 
-Commit both the template change and the regenerated outputs. `.github/workflows/copier-drift.yml` enforces this on PRs. Detailed authoring guide: [`template/AGENTS.md`](template/AGENTS.md).
+Commit the template change and regenerated outputs together. The
+`copier-drift.yml` workflow runs the same `copier copy --overwrite` flow and fails
+if rendered files drift.
 
-## Creating a new skill
+## Validation
 
-Use Anthropic's `skill-creator` for the design, structure, and validation workflow:
-
-```bash
-npx skills add https://github.com/anthropics/skills --skill skill-creator
-```
-
-References:
-- [skills.sh/anthropics/skills/skill-creator](https://skills.sh/anthropics/skills/skill-creator)
-- [SKILL.md source](https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md)
-
-After scaffolding, register the new skill in this repo: add its path to the `skills` array in `.claude-plugin/marketplace.json` and add a row to the table in `README.md`. The Codex plugin manifest points at `./skills/`, so new skills do not need a separate Codex plugin registration unless the root plugin metadata changes.
-
-## Releasing
-
-A `v*` tag (e.g. `v0.1.0`) triggers `.github/workflows/release.yml`, which zips each `skills/*` directory and attaches the zips to a GitHub Release. Cowork/Desktop users download the zip they want.
-
-## Distribution
-
-```bash
-# Codex plugin marketplace
-codex plugin marketplace add usetemi/skills
-
-# Claude Code plugin marketplace
-/plugin marketplace add usetemi/skills
-/plugin install usetemi@usetemi
-
-# skills.sh (Codex, Cursor, Gemini CLI, etc.)
-npx skills add usetemi/skills
-```
+- For Python CLI skills, run:
+  ```bash
+  uv run --project skills/<skill> ruff check .
+  uv run --project skills/<skill> ty check
+  ```
+- After editing `template/**`, run the Copier re-render command for each affected
+  skill with a `.copier-answers.yml` file and confirm the diff contains only
+  intended changes.
+- For docs-only edits, re-read the changed guidance and check for duplicated
+  README content, stale file indexes, or command drift.
+- Before finishing, run `git diff --check`.

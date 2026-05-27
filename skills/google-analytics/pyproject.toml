@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Google Analytics 4 CLI — Data API, Admin API, and Measurement Protocol"
 requires-python = ">=3.12"
 dependencies = [
-    "click>=8.3",
+    "click>=8.4.1",
     "google-analytics-data>=0.21",
     "google-analytics-admin>=0.28",
     "google-auth>=2.49",

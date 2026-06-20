@@ -14,7 +14,7 @@ dependencies = [
 gsc = "gsc.cli:cli"
 
 [build-system]
-requires = ["uv_build>=0.9,<1"]
+requires = ["uv_build>=0.11.10,<1"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]

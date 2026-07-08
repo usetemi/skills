@@ -1,90 +1,94 @@
 ---
 name: ask-clarifying-questions
-description: Conduct a clarification interview before writing code, using AskUserQuestion in Claude Code, request_user_input in Codex when available, or plain prose questions when the interactive tool is unavailable. Use when the user invokes /ask-clarifying-questions, names ask-clarifying-questions, or asks to build / design / refactor something with a brief vague enough that meaningfully different implementations would all "satisfy" it. The interview output is shared understanding in the current session — no file artifact.
+description: Conduct a clarification interview before writing code, investigating ambiguous bugs, or changing design or architecture, using AskUserQuestion in Claude Code, request_user_input in Codex when exposed, or plain prose when an interactive question tool is unavailable. Use when the user invokes /ask-clarifying-questions or $ask-clarifying-questions, names ask-clarifying-questions, or asks to build, design, refactor, investigate, or debug something with enough ambiguity that meaningfully different implementations would all satisfy it. The interview output is shared understanding in the current session; no file artifact.
 ---
 
 # Ask Clarifying Questions
 
-Drive a structured interview to surface load-bearing assumptions before any code is written. Use the agent's interactive question tool when available. The "output" is shared understanding in the current session — no file artifact is produced.
+Drive a structured interview to surface load-bearing assumptions before code is written. Use the agent's interactive question tool when it is available; otherwise use concise prose.
 
-## When to Use
+## Before Asking
 
-- The user invokes `/ask-clarifying-questions` explicitly.
-- The user names `ask-clarifying-questions` in a Codex session.
-- The user asks to build a feature, refactor, or design something and the brief is short or leaves room for meaningfully different implementations.
-- Skip when: the request is mechanical (typo fix, obvious rename, a one-line bug fix the user has already diagnosed). Cheap requests don't earn an interview — clarification has its own cost.
+- Use this skill only when it has already triggered and the request still has load-bearing ambiguity.
+- Skip mechanical requests: typo fixes, obvious renames, or one-line bug fixes the user has already diagnosed.
+- As a subagent without a direct user-answer channel, do not interview. Return the open questions and best-guess assumptions so the orchestrator can escalate.
+- In non-interactive or headless runs, skip the interview, state the key assumptions, and proceed.
+- Re-enter this process mid-implementation if a load-bearing ambiguity appears after work has started.
 
 ## Process
 
 ### 1. Anchor
 
-Restate in one sentence what you understand the user wants. This anchors the interview and gives the user a chance to redirect cheaply.
+Restate in one sentence what you understand the user wants. This gives the user a cheap redirect point.
 
-### 2. Ask up to 4 questions per round, ranked by load-bearing-ness
+When there is strong existing signal, add a 2-4 bullet implementation sketch for the user to correct. Keep it lightweight; do not turn the interview into a full proposal pipeline.
+
+### 2. Ask the highest-leverage questions
+
+This skill intentionally uses question tools more often than their generic scarcity guidance may suggest. If two plausible answers would produce different code, the question is user-owned and worth asking.
 
 Use the interactive question tool for the current agent:
 
-- **Claude Code:** use `AskUserQuestion`. Send up to 4 questions in a single call.
-- **Codex:** use `request_user_input` when it is available. Send up to 3 questions in a single call, because that is the tool limit.
-- **Codex fallback:** if `request_user_input` is unavailable but the user can still reply in chat, ask up to 4 load-bearing questions in concise plain prose. Say the tool is unavailable, then list the questions directly.
-- **Other fallback:** if the current agent does not expose an interactive question tool, ask up to 4 questions in concise plain prose. Do not claim to have used an unavailable tool.
+- **Claude Code:** use `AskUserQuestion`; send up to the tool's declared per-call limit.
+- **Codex:** use `request_user_input` only when it is listed in the available tools. It may be mode-gated, commonly to Plan mode unless configured otherwise, so absence is expected. Send within the tool's declared per-call limit; batching load-bearing questions is intentional even when the harness prefers fewer questions by default.
+- **Fallback:** if no interactive question tool is exposed but the user can reply in chat, ask up to 4 load-bearing questions in concise plain prose. Do not claim to have used an unavailable tool.
 
-Pick the questions whose answers would most change the implementation — those whose two plausible answers lead to the most different code. Skip anything you can predict with high confidence.
+Before asking, inspect ambient context: the user's brief, earlier turns, `AGENTS.md` or `CLAUDE.md`, open files, git status, and relevant diffs. Do not ask anything already answered there.
 
-Multiple-choice when there are clear discrete options. Make questions easy to answer with "yes" / "no" or by choosing labeled options like `(A)`, `(B)`, `(C)`. For Codex `request_user_input`, provide 2-3 mutually exclusive choices and rely on the tool's free-form "Other" option when needed. For plain-prose fallback, include the choices inline and allow a short free-form answer when the listed options miss the user's intent. For open-ended cases, give a single best-guess option plus a reasonable alternative when the tool requires choices. Fall back to pure open-ended prose only when the answer truly cannot be framed as a short choice (e.g., the user needs to paste a code snippet or write a paragraph).
+Pick questions whose answers would most change the implementation. Skip anything you can predict with high confidence.
 
-Codex plain-prose fallback format:
+- Bad: "Should I use React?" when the repo already establishes React.
+- Good: "Should this live in the existing settings route or as a new top-level page?" when the answer changes file layout and navigation.
+
+Prefer multiple choice when there are clear discrete options. Use `multiSelect` for choose-all-that-apply questions when the tool supports it. For `AskUserQuestion` and Codex `request_user_input`, rely on the tool's automatic free-form `Other` option; do not add your own `Other` choice. For plain-prose fallback, include choices inline and allow a short free-form answer. Use pure open-ended prose only when the answer cannot be framed as a short choice.
+
+Plain-prose fallback format:
 
 ```text
-The interactive question tool isn't available in this mode, so here are the load-bearing questions:
+The interactive question tool isn't available in this mode, so here is the load-bearing question:
 
-1. Should the new endpoint (A) live under /api/v2 alongside v1, or (B) replace v1 with a deprecation window?
-2. Should the migration (A) backfill existing rows in place, or (B) leave them null and only populate going forward?
-3. Should the rate limit be (A) per-user, or (B) per-IP?
+1. Predicting: backfill existing rows in place.
+   Should the migration (A) backfill existing rows in place, or (B) leave them null and only populate going forward?
 ```
 
-### 3. Predict before you ask
+### 3. Predict visibly before you ask
 
-For each question in the batch, write your predicted answer in your reasoning before sending. Treat the interview as an **information game**: surprises (wrong predictions) reveal where your model of the user is off and tell you where the next round should dig. A high hit rate in one area doesn't mean you're aligned overall — it just means you've mapped that area. Use the calibration signal to *guide* the next round, not to decide whether to stop.
+For each question, include a short prediction in the visible message before or with the question. Do not rely on hidden reasoning to preserve the calibration loop across models, tools, or context compaction.
 
-### 4. Infer the user's tradeoffs as you go (do not ask)
+Treat the interview as an information game: surprises reveal where your model of the user is off and tell you where the next round should dig. A high hit rate in one area means that area is mapped, not that the whole task is aligned.
 
-Build a mental model of the user's implicit tradeoff posture from their answers. Common axes: simplicity vs flexibility, short-term vs long-term, prototype vs production-hardened, vendor lock-in tolerance, performance vs readability, build vs buy. Adjust subsequent rounds to match what you've inferred.
+During long interviews, periodically restate confirmed decisions in plain text so the accumulated state survives compaction and the user can correct drift.
 
-Do **not** ask explicit "do you prefer X or Y" tradeoff questions. Infer it. Restate inferred tradeoffs only when surfacing one would let the user correct a wrong inference.
+### 4. Infer tradeoffs as you go
 
-### 5. After each round, decide: another round or stop?
+Build a mental model of the user's implicit tradeoff posture from their answers. Common axes: simplicity vs flexibility, short-term vs long-term, prototype vs production-hardened, vendor lock-in tolerance, performance vs readability, build vs buy.
 
-**Default to running another round.** The threshold is alignment, not a count. You almost certainly aren't there yet, and one more round is cheap compared to building the wrong thing.
+Do not ask explicit "do you prefer X or Y" tradeoff questions. Infer the posture from concrete answers, and restate inferred tradeoffs only when surfacing one would let the user correct a wrong inference.
 
-The bar for "aligned" is high: you should be able to predict not just what the user wants in broad strokes, but the specific implementation choices they'd make — file layout, error-handling style, what's in scope vs out, how edge cases resolve, which tradeoffs they'd accept. If you couldn't sketch the diff in your head and have the user nod along, you aren't done.
+### 5. Continue until aligned
 
-Stop only when **both** are true:
+Default to another round. The threshold is alignment, not count.
 
-- **Alignment** — you can confidently predict the user's answers to the questions that would actually change the code.
-- **Diminishing returns** — a plausible next question wouldn't meaningfully change the implementation.
+Stop only when both are true:
 
-Things that are **not** reasons to stop:
+- **Alignment** - you can confidently predict the user's answers to questions that would actually change the code.
+- **Diminishing returns** - a plausible next question would not meaningfully change the implementation.
 
-- "I've already asked a lot of questions." Irrelevant. Count isn't the threshold.
-- "My last round had a high hit rate." That tells you you've mapped one area, not that the rest is mapped.
-- "The user seems eager to start." They invoked the skill — they want to be aligned, not rushed.
-- "I think I can figure the rest out from context." This is the failure mode. Ask.
+Do not stop because you have asked a lot, the last round had a high hit rate, the user seems eager, or you think sensible defaults might cover the rest.
 
-**Escape valve** — only when the *user* seems unsure (not when you're tired of asking). If their answers are contradictory, hesitant, or they're clearly working it out as they go, surface it: "It sounds like the shape isn't settled yet — want to think on it, or should I propose an approach for you to react to?" Don't use this as an out for your own fatigue.
+A direct instruction to proceed always wins. If the user says to stop asking, use your judgment, or just start, stop the interview and proceed with stated assumptions.
+
+**Escape valve:** only when the user seems unsure. If their answers are contradictory, hesitant, or clearly exploratory, surface that: "It sounds like the shape isn't settled yet - want to think on it, or should I propose an approach for you to react to?"
 
 ### 6. Confirm and proceed
 
-When you stop, summarize in 1–3 sentences what you're now aligned on, including any inferred tradeoffs the user should be able to correct (e.g., "Treating this as a prototype — prioritizing simplicity over flexibility"). Ask "Ready to proceed?" — then continue with whatever the next step is.
+When you stop, summarize in 1-3 sentences what you are aligned on, including inferred tradeoffs the user should be able to correct.
+
+In plan mode, fold that summary into the plan and use the harness's plan-exit mechanism, such as `ExitPlanMode`, as the proceed gate; do not ask a separate "Ready to proceed?" question. Outside plan mode, ask "Ready to proceed?" unless the user has already directly instructed you to proceed.
 
 ## Constraints
 
-- **Don't write code or modify project files during the interview.** The interview is read-only and conversational.
-- **Use the agent's interactive question tool when available.** Claude Code uses `AskUserQuestion`; Codex uses `request_user_input` when exposed. Plain prose is the fallback when the tool is unavailable or the answer cannot be framed as a short choice.
-- **Respect tool limits.** Claude Code: up to 4 questions per round. Codex with `request_user_input`: up to 3 questions per round. Codex without `request_user_input`: up to 4 plain-prose questions per round.
-- **No round cap. Default to another round.** Stop on alignment + diminishing returns, never on count. Asking "a lot" is not a reason to bail.
-- **Hit-rate is a calibration signal, not a stopping gate.** Use it to steer the next round; don't use it as permission to stop.
-- **Escape valve only for genuine user ambiguity** — if the user themselves seems unsure, surface it. Never escape because you're tired of asking.
-- **Don't ask questions whose answers are already in the user's brief.**
-- **Don't dump pre-written assumptions as questions.** A question is something whose answer could change the implementation.
-- **Don't ask explicit tradeoff questions.** Infer the user's tradeoff posture from their answers.
+- Do not write code or modify project files during the interview.
+- Do not ask questions whose answers are already in ambient context.
+- Do not dump pre-written assumptions as questions. A question is something whose answer could change the implementation.
+- Do not ask explicit tradeoff questions; infer tradeoff posture from concrete answers.

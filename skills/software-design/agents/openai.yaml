@@ -1,0 +1,4 @@
+interface:
+  display_name: "Software Design"
+  short_description: "Design judgment for modules, interfaces, and information locality"
+  default_prompt: "Use $software-design to design or restructure a module or interface, or compare alternative designs."

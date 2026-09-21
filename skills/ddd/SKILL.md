@@ -130,7 +130,8 @@ Writing rules:
   place instead of restating the rule.
 - Define terms by behavior: what the concept does, permits, and forbids, and
   how it differs from its neighbors. A synonym is not a definition.
-- State rules in domain language, not in tables, fields, endpoints, or classes.
+- State rules in domain language, not in database tables, columns, endpoints,
+  or classes.
 - Keep current-state content out: no implementation notes, migration status,
   TODOs, open questions, or "not yet built" caveats. Report gaps between code
   and model to the user in the conversation.

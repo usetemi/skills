@@ -23,8 +23,8 @@ fly config validate --strict
 
 Use `fly status`, `fly checks list`, `fly releases`, and `fly services` for
 read-only remote inspection when app credentials are available. Do not run
-`fly deploy`, `fly launch`, `fly scale`, `fly secrets set`, `fly ips`, or
-resource creation commands unless the user asked for remote changes.
+`fly deploy`, `fly launch`, `fly scale`, `fly secrets set`, address allocation
+or release, or other resource mutations unless the task authorizes remote changes.
 
 ## New Apps
 

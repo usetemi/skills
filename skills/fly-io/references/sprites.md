@@ -40,6 +40,14 @@ into chat, dump `~/.sprites/sprites.json`, or disable keyring storage just to
 inspect authentication. Check selected org and permissions before reauthenticating;
 do not log out unrelated Fly sessions as a routine troubleshooting step.
 
+## Creation and removal
+
+For an authorized new environment, `sprite create -o <org> --skip-console <name>`
+creates it without opening a console. Idle pause is automatic; closing a console
+is not deletion. `sprite destroy -o <org> -s <name>` removes the environment:
+export needed work and confirm its identity before destruction. Do not use
+recreation as the first response to an exec or authentication failure.
+
 ## Persistence and checkpoints
 
 The [lifecycle contract](https://docs.sprites.dev/concepts/lifecycle/) distinguishes

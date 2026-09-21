@@ -37,9 +37,8 @@ parameters, more hidden inside?
   the wrong shape.
 - **The fresh-reader test.** Can someone use the module correctly from its
   interface alone, without opening the implementation or its siblings? If
-  crucial behavior — a side effect, an ordering constraint, idempotency, an
-  error mode — is discoverable only by reading the implementation, the
-  interface is incomplete; state it where the caller will see it.
+  crucial behavior is discoverable only by reading the implementation, the
+  interface is incomplete; state it in the interface's comment.
 
 ## Decomposition
 
@@ -85,9 +84,35 @@ narrowest durable place a reader will actually encounter:
 - **A type, schema, constraint, or lint** for anything an agent could
   otherwise silently violate — prose is advisory; mechanisms survive
   imperfect attention.
-- **The interface's documentation** for the contract: side effects, idempotency,
-  error modes, what callers may depend on.
+- **The interface's comment** for the contract: what callers may depend on.
 - **An adjacent comment** for local rationale a reader cannot reconstruct
-  from the code: the non-obvious fact, why it matters, what must not change
-  casually, and where it is verified.
+  from the code.
 - **The nearest scoped `AGENTS.md`** for subsystem workflow and conventions.
+
+## Comments
+
+**A comment carries information that cannot be expressed in code.** The test
+for any comment: does it help the next reader build an adequate theory of the
+program? The author is inside the box, writing to a reader who stands outside
+and cannot see what the author saw.
+
+A comment that restates *what* the code does fails the test — it adds reading
+without adding information, and it goes stale when the code moves. Write what
+the code cannot say:
+
+- **On an interface, everything needed to use it without reading the
+  implementation.** A signature alone is rarely enough. State what it leaves
+  open: expected formats and units, whether order is significant, what happens
+  on duplicates, conflicts, or empty input, side effects and where state
+  lives, idempotency, error modes. Skip what the enclosing module's comment
+  already states.
+- **In an implementation, why — and whatever is not obvious.** The reason the
+  code takes this shape (efficiency, a vendor quirk, an incident), the key
+  idea of a non-obvious algorithm, the invariant that must not change
+  casually, and where it is verified.
+- **Key ideas and conclusions, stated explicitly.** Do not leave the reader
+  to deduce what the author already knows.
+
+A comment cannot — and need not — say everything. Comments about purpose and
+reasoning stay true longer than comments that name the pieces currently in
+place.

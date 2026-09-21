@@ -1,4 +1,4 @@
 interface:
   display_name: "DDD"
-  short_description: "Design and refine domain models with domain experts"
-  default_prompt: "Use $ddd to design or review this domain model with me as the domain expert."
+  short_description: "Write and maintain DOMAIN.md with the domain expert"
+  default_prompt: "Use $ddd to write or revise DOMAIN.md with me as the domain expert."

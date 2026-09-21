@@ -3,7 +3,7 @@
 Official docs:
 
 - Production checklist: https://fly.io/docs/apps/going-to-production/
-- App availability: https://fly.io/docs/reference/app-availability/
+- App availability: https://fly.io/docs/apps/app-availability/
 - Organization roles: https://fly.io/docs/security/org-roles-permissions/
 - Access tokens: https://fly.io/docs/security/tokens/
 - Logging: https://fly.io/docs/monitoring/logging-overview/
@@ -61,8 +61,8 @@ Rules:
   service as public.
 - Flycast does not make a service private if the app also has public IPs for the
   same service config.
-- Shared IPv4 is usually enough for public HTTP apps. Dedicated IPv4 is for
-  concrete protocol or routing needs.
+- Shared IPv4 is usually enough for public HTTP apps. Choose dedicated IPv4
+  only for a concrete protocol/routing need and check current pricing.
 - Anycast inbound IPs are unrelated to outbound allowlisting. Use app-scoped
   egress IPs for fixed outbound source IPs.
 
@@ -84,13 +84,16 @@ Rules:
 
 ## Observability
 
-- `fly logs` is useful for immediate debugging, but production apps need a log
-  retention/export story.
-- Use Fly metrics and checks for platform visibility.
+- `fly logs` is useful for immediate debugging. Check current search retention
+  and export logs when the app needs longer retention or independent access.
+- Use Fly metrics and checks for platform visibility; `fly synthetics` adds
+  Fly-run synthetic monitoring.
 - Add app-level metrics for queue depth, worker freshness, DB migration status,
   replication lag, and business-critical paths.
 - Consider Sentry for application errors and Arcjet or a WAF extension when
-  public apps need bot, abuse, or edge protection.
+  public apps need bot, abuse, or edge protection. Provisioning new Sentry
+  projects through Fly is discontinued; existing Fly-provisioned DSNs keep
+  working, new setups register with Sentry directly.
 - For workers without public services, use watchdog jobs, metrics, queue alerts,
   or Machines API checks. Fly service health checks do not cover them.
 
@@ -115,12 +118,17 @@ Rules:
 
 ## Extensions
 
-Current `fly extensions` includes services such as Arcjet, Sentry, Tigris
-storage, Supabase, Upstash Vector, Wafris, MySQL, and Kubernetes. Treat
-extensions as strong options when they match the production need, but verify the
-current extension help and official docs before provisioning:
+Use `fly extensions --help` and the chosen extension's current docs to check
+availability, ownership, billing, and support before provisioning. A CLI entry
+can survive after new provisioning is discontinued (for example, Sentry).
+Do not infer an available service from a historical extension list.
 
 ```bash
 fly extensions --help
 fly extensions <name> --help
 ```
+
+Use [current pricing](https://fly.io/docs/about/pricing/) for compute, volumes,
+snapshots, addresses, egress, and managed services. Include stopped-Machine
+storage and redundant capacity when comparing designs. Avoid preserving price
+or version snapshots in application guidance.

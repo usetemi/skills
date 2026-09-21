@@ -41,7 +41,7 @@ Each skill ships as a zip on the [latest release](https://github.com/usetemi/ski
 |---|---|
 | [`ask-clarifying-questions`](skills/ask-clarifying-questions) | Conduct clarification interviews before ambiguous implementation, investigation, or design work, showing each question before its visible prediction. |
 | [`software-design`](skills/software-design) | Design judgment for modules, interfaces, and where information lives. |
-| [`ddd`](skills/ddd) | Design, implement, refactor, or review domain models with Domain-Driven Design, interviewing the user as the domain expert. |
+| [`ddd`](skills/ddd) | Write, revise, and consolidate `DOMAIN.md`, a repository's domain model (ubiquitous language, model, rules and invariants), by interviewing the user as the domain expert. |
 | [`fly-io`](skills/fly-io) | Deploy, review, troubleshoot, and design Fly.io apps, Machines, networking, and storage; operate and integrate Sprites persistent environments. |
 | [`google-analytics`](skills/google-analytics) | Query GA4 reports, manage properties, streams, key events, audiences, and access bindings, and send Measurement Protocol events. Wraps the Data API, Admin API, and MP via the `ga4` CLI. |
 | [`google-drive`](skills/google-drive) | Sync Google Drive files with a manifest-tracked pull/push workflow. Re-imports Google Docs, Sheets, and Slides as native format on push. Works with shared drives. Wraps `rclone`. |

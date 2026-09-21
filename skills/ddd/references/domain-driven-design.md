@@ -1,5 +1,15 @@
 # Domain-Driven Design Reference
 
+## Contents
+
+- Collaborate With Domain Experts
+- Build a Ubiquitous Language
+- Practice Model-Driven Design: Entities, Value Objects, Domain Services,
+  Aggregates, Factories, Repositories, Domain Events
+- Bring Key Concepts Into Light
+- Refactor Continuously
+- Review an Existing System: Language, Model, Explicitness, Evolution
+
 Domain-driven design aligns software with the domain it serves. Its central practice is to build a shared model with domain experts, express that model directly in the software, and refine both as understanding and business needs evolve.
 
 Use domain-driven design where the domain is complex enough that misunderstanding business concepts, rules, or relationships presents material risk. Do not force it onto simple technical or data-processing problems that do not contain meaningful domain behavior.

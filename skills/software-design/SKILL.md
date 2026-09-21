@@ -100,7 +100,7 @@ A comment that restates *what* the code does fails the test — it adds reading
 without adding information, and it goes stale when the code moves. Write what
 the code cannot say:
 
-- **On an interface, what a caller would otherwise get wrong.** Picture a
+- **On an interface, what a caller would otherwise get wrong.** Imagine a
   caller who sees only the signature. What would they assume wrongly? What
   would they have to open the implementation to learn? Say that. Use a name
   or a type first when the language allows, and comment only what is left. If

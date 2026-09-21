@@ -4,7 +4,7 @@ Official docs:
 
 - Managed Postgres: https://fly.io/docs/mpg/
 - Volumes: https://fly.io/docs/volumes/overview/
-- App config mounts: https://fly.io/docs/reference/configuration/#the-mounts-section
+- App config mounts: https://fly.io/docs/reference/configuration/
 - Tigris: https://fly.io/docs/tigris/
 - Upstash Redis: https://fly.io/docs/upstash/redis/
 - LiteFS: https://fly.io/docs/litefs/
@@ -18,8 +18,8 @@ Official docs:
 
 - Production Postgres: use Managed Postgres (`fly mpg`).
 - Object storage: use Tigris.
-- Redis/cache/queues: use Fly's Upstash Redis integration unless self-hosting is
-  explicitly required.
+- Redis/cache/queues: evaluate Fly's Upstash integration against the client
+  command set, latency, eviction, persistence, and connection requirements.
 - Durable local files: use Fly Volumes only when the app understands local
   storage, replication, and backups.
 - SQLite with restore-based durability: use a Fly Volume plus Litestream to
@@ -42,22 +42,25 @@ fly mpg attach <cluster-id> --app <app> --variable-name DATABASE_URL
 fly mpg status <cluster-id>
 fly mpg backup list <cluster-id>
 fly mpg backup create <cluster-id>
+fly mpg restore <cluster-id>
 fly mpg connect <cluster-id>
+fly mpg proxy <cluster-id>
+fly mpg databases --help
+fly mpg users --help
 ```
 
 Guidance:
 
-- Place MPG near the app's primary region unless data residency or latency says
-  otherwise.
-- Current CLI supports Postgres major versions 16 and 17; verify with
-  `fly mpg create --help` before choosing.
-- MPG supports `pgvector`; PostGIS can be enabled when provisioning.
-- Some features remain under development in official docs, including
-  customer-facing alerting and database migration tooling. Do not assume those
-  exist without checking current docs.
+- Place MPG near the app's primary region; account for cross-region latency
+  and network billing using [current pricing](https://fly.io/docs/about/pricing/).
+- Select plans, supported Postgres versions, extensions, and available regions
+  from `fly mpg create --help` and the current MPG docs. Check feature availability
+  before promising alerting, migration tooling, or a particular service generation.
+- `fly mpg restore` creates a separately billed new cluster; it does not overwrite
+  the source. Verify backup/PITR coverage and plan connection cutover separately.
 - For deploys that run migrations, use app-level `release_command`, but remember
   release Machines have no volumes.
-- Downrank legacy unmanaged `fly postgres` clusters for new production work.
+- Legacy unmanaged `fly postgres` clusters are unsupported by Fly support.
   Mention them only for existing apps or explicit requests.
 
 ## Volumes
@@ -73,8 +76,10 @@ Core constraints:
   volume at a time.
 - Volumes are independent. Fly does not replicate data between volumes for the
   app.
-- Root filesystems are ephemeral. Anything important must live outside the root
-  filesystem or be reconstructable.
+- Check current size limits before choosing an `auto_extend_size_limit`.
+- Root filesystems are ephemeral by default. Anything important must live
+  outside the root filesystem or be reconstructable; `[[vm]]`
+  `persist_rootfs = "restart"`/`"always"` is an available override.
 - Volumes are not available during image builds or release commands.
 
 Production guidance:
@@ -85,6 +90,8 @@ Production guidance:
 - Build application-level replication or use a data system that handles it.
 - Take backups outside Fly snapshots for important data. Automatic snapshots are
   useful but should not be the only backup plan.
+- Check current snapshot pricing and retention before setting
+  `fly volumes update --snapshot-retention`. Test restoration into a new volume.
 - Volumes can grow but not shrink. Plan size and retention deliberately.
 
 Useful commands:
@@ -129,6 +136,17 @@ fly storage update <bucket>
 fly storage destroy <bucket>
 ```
 
+Capabilities worth knowing:
+
+- Shadow buckets (`fly storage create/update --shadow-*` flags) support migration
+  from existing storage. Write-through requires `--shadow-write-through`; do not
+  assume configuring a shadow alone enables dual writes. Verify cutover and
+  failure behavior in [Tigris docs](https://www.tigrisdata.com/docs/).
+- `--public`/`--private` toggle bucket visibility, and `--custom-domain` serves
+  a bucket from a production hostname.
+- For bucket branching or snapshots, check the current Tigris API contract
+  separately from flyctl; do not infer database-consistent backups from a bucket copy.
+
 Check generated secrets and bucket region behavior in current docs before
 hardcoding SDK configuration. Prefer app secrets for keys and bucket names.
 
@@ -167,6 +185,8 @@ SQLite pragmas and gotchas:
 - Test restore before calling this production-ready.
 - Treat the default async replication window as possible data loss during a
   catastrophic host failure.
+- For direct backup queries through Litestream VFS, check the installed
+  Litestream version and its VFS docs; do not treat that as a writable replica.
 - Never put durable SQLite on the root filesystem or a network filesystem.
 
 ## Upstash Redis
@@ -197,7 +217,8 @@ Rules:
 
 - Do not combine LiteFS with Fly Proxy autostop/autostart. Official docs warn
   this can risk rollback and data loss.
-- Keep regular off-site backups.
+- Keep regular off-site backups. Evaluate community backup tooling separately;
+  do not imply Fly operates or supports it.
 - Put LiteFS data on a persistent volume.
 - Ensure write paths route to the primary and read-after-write behavior is
   understood.
@@ -206,3 +227,23 @@ Rules:
 
 Use LiteFS only when SQLite locality is a deliberate architecture choice and the
 team understands the operational model.
+
+## Redis selection and diagnosis
+
+Separate disposable cache data from queue state. For BullMQ, verify Redis command
+compatibility and connection behavior with the installed BullMQ version; its
+[production guidance](https://docs.bullmq.io/guide/going-to-production) requires
+`noeviction` and discusses persistence and reconnect settings. Confirm the chosen
+Upstash plan can supply the required behavior before selecting it. Do not apply
+cache eviction to a queue merely because both use Redis.
+
+Use Fly's integration endpoint and region intentionally; check whether a client
+is using TCP Redis or an HTTP API, TLS requirements, and access from the caller's
+network. Local clients may need `fly redis proxy`; `127.0.0.1` inside an app is
+that Machine, not the Redis service. Investigate DNS, connection churn, timeouts,
+command errors, and plan limits before resizing or replacing the service.
+
+Self-host only when a verified requirement justifies owning upgrades, private
+listeners, persistent volumes, backups, restore, replication, and failover.
+A single Redis Machine with a volume is not HA. HTTP autostart cannot wake a
+queue worker that only polls Redis; use an appropriate worker lifecycle.

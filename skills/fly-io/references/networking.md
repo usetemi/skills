@@ -121,8 +121,9 @@ Request path rules:
 
 - Fly-Src was introduced for Flycast HTTP requests, where app-to-app traffic goes
   through Fly Proxy.
-- Fly has also expanded Fly-Src to requests between Fly Machines over 6PN,
-  including Flycast.
+- Fly expanded the opt-in behavior for requests originating from Fly Machines
+  and passing through Fly Proxy. Raw direct 6PN HTTP bypasses the proxy and
+  must not be assumed to receive signed metadata.
 - For requests that do not go through Flycast, the caller must opt in by sending
   `Fly-Src-OptIn: *`; Fly will not populate `Fly-Src` without that header.
 - This opt-in path is useful when a public Fly app should authenticate requests
@@ -143,11 +144,12 @@ Security boundaries:
 ## Custom Private Networks
 
 - Use custom private networks when the default organization network is too broad
-  for the isolation boundary, such as tenant isolation, environment isolation, or
-  cross-org access control.
-- `fly apps create --network <network-id-or-name>` can place a new app on a
-  custom private network. Check current `fly networks --help` and docs before
-  creating or modifying networks.
+  for the isolation boundary, such as tenant isolation or environment isolation
+  within one organization. They are single-org only; for cross-org access, use
+  separate organizations or a Flycast address allocated with `--org`.
+- `fly apps create --network <network-id-or-name>` places a new app on a custom
+  private network. flyctl has no command to list networks or read an app's
+  network; discover it through the Machines API app object's `network` field.
 - When exposing a Flycast service across networks, allocate the private address
   for the originating network with `fly ips allocate-v6 --private --network ...`.
 
@@ -165,21 +167,50 @@ Security boundaries:
 
 - Allocate one egress pair for each region where the app runs Machines that need
   allowlisting.
-- Static egress costs more and limits how many Machines can run at once. Confirm
-  the region and scaling requirement before allocating.
+- Check current egress pricing and per-pair Machine limits before allocation;
+  confirm the region and scaling requirement, including temporary deploy capacity.
 - Legacy machine-scoped egress IPs still exist but are no longer the default
-  recommendation for new work.
+  recommendation for new work; migrate one with
+  `fly machine egress-ip promote <machine-id>`.
 
 ## Dynamic Routing
 
 - Fly adds request headers such as `Fly-Client-IP`, `Fly-Region`,
   `Fly-Forwarded-Port`, and forwarded protocol headers when the HTTP handler is
   used.
-- `Fly-Prefer-Region`, `Fly-Prefer-Instance-Id`, and
-  `Fly-Force-Instance-Id` can influence routing for clients that know where
-  they want to land.
+- `Fly-Prefer-Region`, `Fly-Prefer-Instance-Id`, `Fly-Force-Instance-Id`, and
+  `Fly-Force-Region` can influence routing for clients that know where they
+  want to land; the `Force` variants have no nearest-region fallback.
 - Use `fly-replay` when an app should accept a request in one place and ask Fly
   Proxy to replay it to another region, app, or Machine. This is useful for
   write-primary routing, tenant locality, and regional data placement.
+- Requests over 1MB cannot be replayed. Route large uploads directly to storage
+  or steer them with `Fly-Prefer-Region` instead.
 - Make replay targets explicit and bounded. Avoid loops and verify auth context
   survives replay.
+
+## Diagnose the actual path
+
+Trace caller → DNS/address → listener → proxy/handler → health check → process.
+Record whether the failure is resolution, connect, TLS, HTTP, or authorization.
+From a caller Machine inspect `.internal`/`.flycast` resolution and try the
+actual service port; a successful laptop request does not test private DNS.
+Compare listeners, `internal_port`, process assignments, checks, Machine state,
+and public/private IP allocations. Check autostart only for proxy-routed traffic.
+Do not change exposure or allocate addresses just to investigate.
+
+## Pattern: an application-controlled router
+
+[Playing Traffic Cop with Fly-Replay](https://fly.io/blog/how-to-fly-replay/)
+uses a small router to map a hostname to a tenant app, then return `fly-replay`.
+This helps when tenant placement or write-primary locality belongs to application
+state. Keep destination services configured and audit their public IPs so direct
+access cannot bypass the intended entrypoint. Validate tenant authorization before
+choosing a target; replay does not supply that authorization.
+
+Use the [current routing contract](https://fly.io/docs/networking/dynamic-request-routing/)
+for body limits, timeout/fallback, cache behavior, and cross-network/org routing.
+The blog's old Apps v2 enablement command is obsolete; do not copy it. Default
+replay scope is the same org and network; wider routing requires the documented
+receiver permissions. Cache routing only when stale placement is acceptable;
+it must remain correct if Fly consults the router again.

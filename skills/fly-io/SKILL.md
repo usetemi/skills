@@ -1,124 +1,65 @@
 ---
 name: fly-io
-description: Use when deploying, configuring, troubleshooting, reviewing, or architecting Fly.io apps and infrastructure. Covers flyctl, fly.toml, Fly Launch, Fly Machines, process groups, health checks, deployment strategies, private networking, 6PN, Flycast, Fly-Src app-to-app auth, egress IPs, volumes, Managed Postgres, Tigris, Litestream, Redis, LiteFS, extensions, CI/CD, and production readiness.
+description: Deploy, configure, review, troubleshoot, and design Fly.io apps, Machines, networking, and storage, or operate and integrate Sprites persistent execution environments. Use for Fly infrastructure, flyctl/fly.toml, and Sprites CLI/API tasks.
 ---
 
-# Fly.io Platform
+# Fly.io and Sprites
 
-Use this skill for any Fly.io work, including routine deploy/config changes and
-architecture decisions for apps known to run on Fly.
+Inspect the app's `fly.toml`, Dockerfile, deployment workflow, and relevant
+runtime code before choosing changes. For Sprites, identify the organization,
+Sprite name, and CLI or SDK integration instead; Sprites uses `sprite`, not
+`flyctl` or `fly.toml`.
 
-Fly changes quickly. Ground decisions in the local CLI and current official docs
-before making version-sensitive claims. When a Fly-authored feature is only
-documented in Fly forum announcements or official example repos, say so and
-avoid presenting it as broadly documented platform surface.
+Use local command help and current official docs for commands, limits, pricing,
+and availability. Start with `fly version` and `fly <command> --help`, or
+`sprite --help` and its relevant subcommand help. A surviving CLI flag is not
+proof that a retired service is available. Do not install tools or create
+resources merely to inspect them.
 
-## First Steps
+## Read the relevant reference
 
-1. Inspect the project shape before prescribing commands.
+- [Deploy and configuration](references/deploy-config.md): launch, process groups,
+  health checks, scaling, autostop, releases, secrets, and CI/CD.
+- [Machines](references/machines.md): API-controlled jobs, workload-specific
+  compute, per-user environments, lifecycle, and isolation choices.
+- [Networking](references/networking.md): 6PN, DNS, Flycast, public exposure,
+  request routing, Fly-Src authentication, custom networks, and static egress.
+- [Data and storage](references/data-storage.md): Managed Postgres, volumes,
+  snapshots, Tigris, SQLite/Litestream, Redis selection, and LiteFS.
+- [Production](references/production.md): availability, tokens, observability,
+  backup/restore review, extensions, and cost checks.
+- [Sprites](references/sprites.md): product selection, authentication, exec,
+  files, persistence, checkpoints, services, networking, and API/SDK contracts.
 
-   ```bash
-   rg --files -g 'fly.toml' -g 'Dockerfile*' -g '.dockerignore' -g '.github/workflows/**' -g 'package.json' -g 'pyproject.toml' -g 'go.mod' -g 'Cargo.toml'
-   ```
+Use Fly Launch for conventional image-based apps; use Machines directly when
+per-instance lifecycle, image, or sizing control is required. Evaluate Sprites
+for persistent mutable execution environments and agent sandboxes. Preserve an
+explicit user choice. Choose storage from the workload's durability and recovery
+needs, not the deployment tool alone.
 
-2. Check the current `flyctl` surface for the task.
+## Research opportunities, not just syntax
 
-   ```bash
-   fly version
-   fly help
-   fly <command> --help
-   ```
+For architecture, difficult troubleshooting, or optimization, search the
+[Fly blog](https://fly.io/blog/), [engineering posts](https://fly.io/infra-log/),
+[Sprites blog](https://fly.io/sprites-blog/), [community](https://community.fly.io/),
+and [official examples](https://github.com/superfly), alongside current docs.
+Look for relevant patterns and failure reports; surface verified opportunities
+with their applicability and constraints rather than expanding scope silently.
 
-3. Prefer non-mutating validation unless the user explicitly asked to deploy or
-   change remote resources.
+Check dates and the whole discussion, including author corrections and later
+releases. Verify a recommendation against current docs, official source/CLI
+behavior, or a disposable reproduction. Attribute retained techniques next to
+the advice. Treat a report as a diagnostic lead, not a platform guarantee;
+omit unresolved workarounds and experimental claims from recommendations.
+When sources conflict, state the conflict and use the narrower confirmed
+contract. Do not claim a cloud behavior was tested when only help/docs were read.
 
-   ```bash
-   fly config show --local
-   fly config validate --strict
-   fly status
-   fly checks list
-   ```
+## Stay within the task
 
-4. Use official Fly docs as the source of truth for unstable details. Do not
-   use arbitrary community posts as encoded facts. For Fly-Src, use the
-   Fly-authored forum announcements and official example repo linked from
-   `references/networking.md`, and state that limitation when it matters.
+Reviews and investigations are read-only. `fly launch --no-deploy` still creates
+an app; it is not an offline validation command. For authorized changes, carry
+out the bounded task and verify the resulting behavior. Ask only when a missing
+decision affects the task or an irreversible operation remains uncertain.
 
-## Reference Routing
-
-- Read `references/deploy-config.md` for `fly.toml`, process groups, health
-  checks, deploy strategies, GitHub Actions, secrets, scaling, autostop, and
-  config validation.
-- Read `references/networking.md` for 6PN, `.internal`, Flycast, public
-  services, private services, custom private networks, request routing headers,
-  `fly-replay`, Fly-Src request source auth, and static egress IPs.
-- Read `references/data-storage.md` for Managed Postgres, volumes,
-  auto-extension, snapshots, backups, Tigris, SQLite with Litestream, Upstash
-  Redis, LiteFS, and durability decisions.
-- Read `references/production.md` for production reviews, security, orgs,
-  tokens, public IP audits, backups, monitoring, logging, and extensions.
-
-## Fly-Native Defaults
-
-- For ordinary apps, prefer Fly Launch-managed apps (`fly launch`, `fly deploy`,
-  `fly.toml`) over hand-managed Machines.
-- Use `fly machine` or the Machines API only when the task needs per-Machine
-  control, unmanaged workloads, one-app-per-customer isolation, or runtime code
-  execution patterns.
-- For production Postgres, prefer Managed Postgres (`fly mpg`) over legacy
-  unmanaged Postgres.
-- For object storage, prefer Tigris.
-- For simple single-writer SQLite apps, use a Fly Volume plus Litestream to
-  Tigris when restore-based durability is acceptable.
-- For Redis, use Fly's Upstash integration unless the app has a clear reason to
-  run its own Redis.
-- For private proxy-routed services, prefer Flycast over raw `.internal` when
-  the service needs Fly Proxy behavior such as autostart, load balancing, TLS,
-  PROXY protocol, or DNS-hostile clients.
-- For Fly app-to-app HTTP origin checks, use verified `Fly-Src` metadata when
-  the request path goes through Fly Proxy and caller identity is the auth
-  boundary. Do not replace user auth or third-party auth with Fly-Src.
-- For fixed outbound allowlisting, prefer app-scoped static egress IPs with
-  `fly ips allocate-egress`; do not recommend legacy machine-scoped egress IPs
-  for new work.
-
-## Gotchas To Surface Early
-
-- Data locality: Machines, volumes, regions, and data durability are not
-  interchangeable. Volumes are local NVMe slices, not replicated network disks.
-- Network exposure: a service in `fly.toml` plus public IPs exposes that service
-  publicly, even if the intended consumer is private or Flycast.
-- Fly-Src: never trust `Fly-Src` without verifying `Fly-Src-Signature` against
-  `/.fly/fly-src.pub`, and check timestamp freshness before authorizing.
-- CLI surprises: current `fly launch --no-deploy` can also offer GitHub Actions
-  setup in GitHub repos; use `--no-github-workflow` when that automation is not
-  wanted.
-- Process groups: defining `[processes]` makes the list complete. Removing a
-  process group from config can destroy Machines in that group on deploy.
-- Health checks: service-level checks affect routing, but failing checks do not
-  restart or stop Machines by themselves.
-- Secrets: `fly secrets set` restarts Machines unless staged; secrets are runtime
-  env vars, not build args.
-- Release commands: they run in temporary Machines without attached volumes.
-- Egress: default outbound IPs are unstable. Allocate app-scoped egress IPs per
-  region only when third parties require allowlisting.
-- Litestream: it is async backup/restore for SQLite, not HA, synchronous
-  replication, multi-writer SQLite, or automatic failover.
-- LiteFS: use with caution, keep off-site backups, and do not combine LiteFS
-  with Fly Proxy autostop/autostart.
-- GPUs: do not recommend Fly GPUs for new work. Fly docs say GPUs are deprecated
-  and unavailable after August 1.
-
-## Architecture Triggers
-
-Pause for Fly-specific architecture thinking when the prompt involves state,
-databases, SQLite, volumes, private services, internal APIs, app-to-app auth,
-regions, tenants, queues, workers, egress allowlisting, HA, failover, restore
-objectives, production, or cost boundaries. In those cases, answer with:
-
-1. The Fly-native recommendation.
-2. The exact commands or `fly.toml` shape.
-3. The gotchas checked and any remaining production risks.
-
-Downrank beginner tutorials, dashboard-first workflows, deprecated offerings,
-and experimental surfaces unless the user asks directly.
+Report the recommendation or change, relevant config/commands, evidence, and
+remaining operational limits. Load only the references needed for that task.

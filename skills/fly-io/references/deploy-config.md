@@ -23,8 +23,8 @@ fly config validate --strict
 
 Use `fly status`, `fly checks list`, `fly releases`, and `fly services` for
 read-only remote inspection when app credentials are available. Do not run
-`fly deploy`, `fly launch`, `fly scale`, `fly secrets set`, `fly ips`, or
-resource creation commands unless the user asked for remote changes.
+`fly deploy`, `fly launch`, `fly scale`, `fly secrets set`, address allocation
+or release, or other resource mutations unless the task authorizes remote changes.
 
 ## New Apps
 
@@ -38,6 +38,11 @@ resource creation commands unless the user asked for remote changes.
   services.
 - Prefer an explicit `--primary-region` for production apps, chosen near the
   main database or primary users.
+- `fly launch` defaults new apps to `--auto-stop stop`, so a fresh app idles its
+  Machines down unless overridden. Autostop values are `off`, `stop`, and
+  `suspend`.
+- Check `--depot` and `--remote-only` in local help before choosing a builder;
+  `auto` is a selection policy, not a guarantee of which builder will run.
 
 ## `fly.toml` Structure
 
@@ -66,6 +71,9 @@ resource creation commands unless the user asked for remote changes.
   collisions between processes.
 - Scale horizontally per process with `fly scale count web=2 worker=1` and
   vertically per process with `fly scale vm ... --process-group web`.
+- `[[vm]]` sections declare per-process-group compute (size, memory, cpus,
+  `cpu_kind`, `persist_rootfs`), and `[[restart]]` sections declare restart
+  policy (`always`/`never`/`on-failure`, retries) per process group.
 
 ## Deploy Behavior
 
@@ -105,6 +113,8 @@ resource creation commands unless the user asked for remote changes.
   causing restarts unless `--stage` is used.
 - `fly secrets set --stage` makes the secret available only after a later deploy
   or `fly secrets deploy`.
+- `fly secrets sync` reconciles flyctl with secrets set elsewhere, such as the
+  dashboard.
 - Secret values cannot be read back through Fly. Use `fly secrets list` for
   names and digests only.
 - `[[files]]` can mount secret contents as files at Machine boot, but referenced
@@ -116,10 +126,24 @@ resource creation commands unless the user asked for remote changes.
 - Prefer app-scoped deploy tokens for CI:
 
   ```bash
-  fly tokens create deploy -x 999999h
+  fly tokens create deploy -a <app> -x <expiry>
   ```
 
 - Store the token as `FLY_API_TOKEN`, run `flyctl deploy --remote-only`, and use
   GitHub Actions concurrency so multiple pushes do not deploy over each other.
 - Review generated workflows. Match the branch name, app config path, monorepo
   working directory, and whether deploy should run for PRs, pushes, or tags.
+
+## Autostop and workload fit
+
+[Autostop/autostart](https://fly.io/docs/launch/autostop-autostart/) starts and
+stops existing Machines; it does not provision arbitrary new capacity. Size the
+Machine pool separately. `min_machines_running` applies in the primary region
+and works with autostop enabled; it is not a global availability guarantee.
+Choose stop versus suspend from process and connection recovery behavior, not
+just cold-start speed. Verify current suspension restrictions before using it.
+
+For a web/worker split, attach the HTTP service only to web processes. Queue
+activity is not incoming Fly Proxy traffic: a stopped poller cannot observe it.
+Use fixed workers or deliberate queue-driven orchestration. Measure queue age
+and completion, not an unrelated web health endpoint.

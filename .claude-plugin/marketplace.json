@@ -16,6 +16,7 @@
       "skills": [
         "./skills/ask-clarifying-questions",
         "./skills/software-design",
+        "./skills/ddd",
         "./skills/google-analytics",
         "./skills/google-drive",
         "./skills/google-search-console",

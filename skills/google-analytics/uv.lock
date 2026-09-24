@@ -256,10 +256,10 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.3" },
-    { name = "google-analytics-admin", specifier = ">=0.28" },
-    { name = "google-analytics-data", specifier = ">=0.21" },
-    { name = "google-auth", specifier = ">=2.49" },
-    { name = "google-auth-oauthlib", specifier = ">=1.3" },
+    { name = "google-analytics-admin", specifier = ">=0.30.1" },
+    { name = "google-analytics-data", specifier = ">=0.23.0" },
+    { name = "google-auth", specifier = ">=2.56.0" },
+    { name = "google-auth-oauthlib", specifier = ">=1.4.0" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "protobuf", specifier = ">=6.31" },
 ]
@@ -272,7 +272,7 @@ dev = [
 
 [[package]]
 name = "google-analytics-admin"
-version = "0.28.0"
+version = "0.30.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-core", extra = ["grpc"] },
@@ -281,14 +281,14 @@ dependencies = [
     { name = "proto-plus" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ad/50/f2030091dad90fe50df5c2ca85cf6b11d0a05c2cfbee0a5b9f2faf96ab29/google_analytics_admin-0.28.0.tar.gz", hash = "sha256:83dc10abb0527bbc5d520a138966acfda62b3e99f9611c3af07bd057bb6a79c3", size = 617467, upload-time = "2026-03-30T22:49:51.443Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/0b/dc92f543e8f93837d6c8f72f6052b48a81919a9676e4888852eb0f747fa6/google_analytics_admin-0.30.1.tar.gz", hash = "sha256:cc8b150217dbec45708867d9d81216e8a10e0f6d432e5e6ac66da2a83d4119b6", size = 614898, upload-time = "2026-06-25T23:39:24.837Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/b2/952857c6ab1e15c114ebc79540fddef4967e31f91cf11c2fed107ae78523/google_analytics_admin-0.28.0-py3-none-any.whl", hash = "sha256:639602a0593666a9f5d6c60505e87a1036510ea58e1c58185b06b4d6efa532a5", size = 396943, upload-time = "2026-03-30T22:49:15.322Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/4f/cce055793fd9c08e8debe676db1e2c09ca117d90a6429ef4684d6a120066/google_analytics_admin-0.30.1-py3-none-any.whl", hash = "sha256:53c9d2f140111faa5cfaa463ca3b69fc9f11fbf968cb2421b76839926ef065d9", size = 399979, upload-time = "2026-06-25T23:38:49.823Z" },
 ]
 
 [[package]]
 name = "google-analytics-data"
-version = "0.21.0"
+version = "0.23.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-core", extra = ["grpc"] },
@@ -297,9 +297,9 @@ dependencies = [
     { name = "proto-plus" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/df/76/d1109c28e5081b54edb78e26d77850f2deccaaf752bdefd27db637bc2278/google_analytics_data-0.21.0.tar.gz", hash = "sha256:8d60eef6a776c311b11cc17380a5dfacd5f220e03fd4c0f78839238bdc3c950d", size = 226517, upload-time = "2026-03-30T22:50:12.92Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/09/76553c6ec3e277d38486f7619d8bad631745fb6bdd486027e956dea8a8c7/google_analytics_data-0.23.0.tar.gz", hash = "sha256:8799b8829ca175e11385008aedb9f2f0aaf5c78c2b69f7570712ee46b190b08a", size = 232484, upload-time = "2026-06-03T14:52:16.145Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/82/bf8781771d58ffa3b72063156106633be2a91f699e73b0f103617d24b183/google_analytics_data-0.21.0-py3-none-any.whl", hash = "sha256:860a2e88e3f6dd6f444d38a1847b5be5aad4885f04554011c5bbd0f9904e5560", size = 193894, upload-time = "2026-03-30T22:48:05.25Z" },
+    { url = "https://files.pythonhosted.org/packages/df/28/56dda8a3ba26c09a26592c1ae701f0092d9c0f8e620df073783dad733ddc/google_analytics_data-0.23.0-py3-none-any.whl", hash = "sha256:ba21edbe7f2aa61424651b11b06f81fa4ceed5db5581ef2ca2af0d189b77c0bd", size = 199547, upload-time = "2026-06-03T14:51:25.009Z" },
 ]
 
 [[package]]
@@ -326,28 +326,28 @@ grpc = [
 
 [[package]]
 name = "google-auth"
-version = "2.49.2"
+version = "2.56.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "pyasn1-modules" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c6/fc/e925290a1ad95c975c459e2df070fac2b90954e13a0370ac505dff78cb99/google_auth-2.49.2.tar.gz", hash = "sha256:c1ae38500e73065dcae57355adb6278cf8b5c8e391994ae9cbadbcb9631ab409", size = 333958, upload-time = "2026-04-10T00:41:21.888Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/66/b4ba60005743e01933e22b4f62313e063f7460458b7d8a358427b4930013/google_auth-2.56.0.tar.gz", hash = "sha256:f90fa030b569a92654b9d690665a073841df33d57487be53db583a9a0867a553", size = 364629, upload-time = "2026-07-13T19:09:57.143Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/76/d241a5c927433420507215df6cac1b1fa4ac0ba7a794df42a84326c68da8/google_auth-2.49.2-py3-none-any.whl", hash = "sha256:c2720924dfc82dedb962c9f52cabb2ab16714fd0a6a707e40561d217574ed6d5", size = 240638, upload-time = "2026-04-10T00:41:14.501Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/7d/cd3e187f14ce832e419e70709bfcc40cb0dc11517d5d03c9d3919bcc3101/google_auth-2.56.0-py3-none-any.whl", hash = "sha256:6e88c10217e07a92bfd01cac8ee99e32ccfb08414c3102e6c5b8d58f37a0d1e0", size = 257976, upload-time = "2026-07-13T19:09:42.685Z" },
 ]
 
 [[package]]
 name = "google-auth-oauthlib"
-version = "1.3.1"
+version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-auth" },
     { name = "requests-oauthlib" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a6/82/62482931dcbe5266a2680d0da17096f2aab983ecb320277d9556700ce00e/google_auth_oauthlib-1.3.1.tar.gz", hash = "sha256:14c22c7b3dd3d06dbe44264144409039465effdd1eef94f7ce3710e486cc4bfa", size = 21663, upload-time = "2026-03-30T22:49:56.408Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/18/90c7fac516e63cf2058166fce0c88c353647c677b51cc036c09c49bb5cbb/google_auth_oauthlib-1.4.0.tar.gz", hash = "sha256:18b5e28880eb8eba9065c436becdc0ee8e4b59117a73a510679c82f70cd363d2", size = 21675, upload-time = "2026-05-07T08:03:47.816Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/e0/cb454a95f460903e39f101e950038ec24a072ca69d0a294a6df625cc1627/google_auth_oauthlib-1.3.1-py3-none-any.whl", hash = "sha256:1a139ef23f1318756805b0e95f655c238bffd29655329a2978218248da4ee7f8", size = 19247, upload-time = "2026-03-30T20:02:23.894Z" },
+    { url = "https://files.pythonhosted.org/packages/37/d3/d7dff0d58a9e9244b48044bfb6a898bfcc8ecc42e0031d1bebc695344725/google_auth_oauthlib-1.4.0-py3-none-any.whl", hash = "sha256:251314f213a9ee46a5ae73988e84fd7cca8bb68e7ecf4bfd45940f9e7f51d070", size = 19261, upload-time = "2026-05-07T08:02:13.798Z" },
 ]
 
 [[package]]

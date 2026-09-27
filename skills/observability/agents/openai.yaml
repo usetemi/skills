@@ -1,4 +1,4 @@
 interface:
   display_name: "Observability"
-  short_description: "Design judgment for instrumentation, alerting, telemetry cost, and investigation"
-  default_prompt: "Use $observability to decide what an operation records, review instrumentation, design an alert, or investigate production behavior."
+  short_description: "Design judgment for instrumentation and production feedback"
+  default_prompt: "Use $observability to decide what telemetry to capture, choose operation boundaries, design alerts, or verify a change in production."

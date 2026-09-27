@@ -41,7 +41,7 @@ Each skill ships as a zip on the [latest release](https://github.com/usetemi/ski
 |---|---|
 | [`ask-clarifying-questions`](skills/ask-clarifying-questions) | Conduct clarification interviews before ambiguous implementation, investigation, or design work, showing each question before its visible prediction. |
 | [`software-design`](skills/software-design) | Design judgment for modules, interfaces, and where information lives. |
-| [`observability`](skills/observability) | Design judgment for making production behavior explainable: what an operation records and where, alert design, telemetry cost and privacy, and how to investigate from the evidence. |
+| [`observability`](skills/observability) | Design judgment for instrumentation and production feedback: what telemetry to capture, operation boundaries, sampling and aggregation, alerts, and verifying a change in production. |
 | [`ddd`](skills/ddd) | Write, revise, and consolidate `DOMAIN.md`, a repository's domain model (ubiquitous language, model, rules and invariants), by interviewing the user as the domain expert. |
 | [`fly-io`](skills/fly-io) | Deploy, review, troubleshoot, and design Fly.io apps, Machines, networking, and storage; operate and integrate Sprites persistent environments. |
 | [`google-analytics`](skills/google-analytics) | Query GA4 reports, manage properties, streams, key events, audiences, and access bindings, and send Measurement Protocol events. Wraps the Data API, Admin API, and MP via the `ga4` CLI. |

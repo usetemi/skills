@@ -11,8 +11,7 @@ description: >-
 # Observability
 
 **Explainability: the evidence needed to explain a production outcome is
-available.** Judge telemetry by the questions it makes answerable and the
-decisions it improves.
+available.** Judge telemetry by the questions it makes answerable.
 
 Design for a fresh investigator. Can someone who did not write the code
 establish what happened, whom it affected, and what distinguished affected
@@ -32,8 +31,7 @@ already held.
 Instrument where the outcome is known. Distinguish an attempt from the
 operation it serves: a failed attempt followed by successful recovery is
 different from an operation that exhausted its retries. Long-running work
-also needs progress evidence; completion records cannot explain work that
-never completes.
+also needs progress evidence.
 
 Automatic instrumentation captures technical activity. Add the application
 meaning it cannot infer: the decision taken, the relevant state, and the
@@ -43,24 +41,16 @@ belong to the same operation.
 
 ## Preserve exploratory power
 
-An investigation's next question depends on its previous answer. Preserve
-enough detail to filter, compare, and inspect individual experiences beyond
-the questions anticipated when the code was written.
+Investigations ask questions nobody anticipated when the code was written.
+Keep enough detail to filter, compare, and inspect individual events.
 
 Identifiers and contextual attributes often explain what makes an outlier
 different. Preserve useful distinctions in events and spans; avoid unbounded
 metric labels that multiply time series. Keep field meanings, types, and
-units consistent so comparisons remain trustworthy.
+units consistent so comparisons remain uniform.
 
-Aggregation is irreversible: a summary cannot recover the individual
-experiences it discarded. Use metrics for population measures and retain
-event-level evidence for explanation. Dashboards are useful starting points
-when investigators can follow their questions into the underlying data.
-
-Evaluate sampling and retention by the questions they make impossible.
-Retaining unusual failures helps diagnosis, but a biased sample cannot
-establish population rates or latency distributions without accounting for
-how it was selected. Missing evidence is not evidence of success.
+Use metrics for population measures and retain event-level evidence for
+explanation.
 
 ## Close the feedback loop
 
@@ -68,26 +58,20 @@ Instrumentation belongs in the change that introduces the behavior. Decide
 during implementation what evidence would distinguish the intended result
 from failure or an unexpected outcome. After release, inspect that evidence.
 
-Tests establish behavior under chosen conditions. Production observation
-reveals behavior under actual conditions. The engineers changing a system
-need both to understand what they shipped.
-
 When investigation requires new instrumentation, treat that as feedback on
-the design. Add the missing context where it originates so future questions
-require less reconstruction.
+the design.
 
 ## Spend attention on user impact
 
 Measure whether the work users depend on actually succeeds. Healthy
 components and successful protocol responses can coexist with a failed
 user journey. Define service-level objectives around the outcome being
-promised; use component signals to help explain deviations.
+promised.
 
-A page spends someone's immediate attention. It should indicate actionable
-user harm or credible imminent harm, identify an owner, and provide a useful
-starting point for investigation. Work that can wait belongs in a less
-disruptive channel. Repeated alerts that require no useful action erode the
-value of every subsequent alert.
+An alert spends someone's immediate attention. It should be actionable,
+identify an owner, and provide a useful starting point for investigation.
+Work that can wait belongs in a less disruptive channel. Repeated alerts
+that require no useful action lead to alert fatigue.
 
 ## Bound the cost
 
@@ -95,9 +79,3 @@ Collect context deliberately. Record opaque identifiers and bounded reason
 codes rather than the personal or secret content behind them; when a value
 is forbidden, leave it out, because truncating, hashing, or inline-redacting
 it still records it. An opaque identifier is not automatically anonymous.
-
-Bound diagnostic overhead so observing an operation does not prevent it
-from completing. Diagnostic telemetry may be dropped under pressure;
-mandatory audit records have a separate contract and may not. Make dropped
-or unavailable telemetry visible so readers can distinguish a quiet system
-from a blind one.

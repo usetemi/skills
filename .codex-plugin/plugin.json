@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "Temi Skills",
     "shortDescription": "Open-source skills for coding agents",
-    "longDescription": "Use Temi Skills to extend Codex with practical workflows for infrastructure, codebase legibility, writing cleanup, Node.js upgrades, PDF workflows, PR video receipts, Fly.io, and Tailscale.",
+    "longDescription": "Use Temi Skills to extend Codex with practical workflows for software design, domain modeling, observability, Node.js upgrades, PDF workflows, Fly.io, and Tailscale.",
     "developerName": "Temi",
     "category": "Coding",
     "capabilities": [
@@ -33,7 +33,6 @@
     "websiteURL": "https://usetemi.com",
     "defaultPrompt": [
       "Use a Temi skill for this task.",
-      "Review this repo for agent legibility.",
       "Troubleshoot this infrastructure setup."
     ],
     "brandColor": "#111111",

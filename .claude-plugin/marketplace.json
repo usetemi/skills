@@ -19,11 +19,8 @@
         "./skills/observability",
         "./skills/ddd",
         "./skills/fly-io",
-        "./skills/harness-engineering",
-        "./skills/humanize",
         "./skills/node-26",
         "./skills/pdf",
-        "./skills/pr-video-receipts",
         "./skills/tailscale"
       ]
     }

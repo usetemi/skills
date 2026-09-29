@@ -16,16 +16,13 @@
     "coding-agents",
     "fly-io",
     "tailscale",
-    "google-analytics",
-    "google-drive",
-    "google-search-console",
     "pdf"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Temi Skills",
     "shortDescription": "Open-source skills for coding agents",
-    "longDescription": "Use Temi Skills to extend Codex with practical workflows for infrastructure, documents, analytics, search, codebase legibility, writing cleanup, Node.js upgrades, PDF workflows, PR video receipts, Fly.io, and Tailscale.",
+    "longDescription": "Use Temi Skills to extend Codex with practical workflows for infrastructure, codebase legibility, writing cleanup, Node.js upgrades, PDF workflows, PR video receipts, Fly.io, and Tailscale.",
     "developerName": "Temi",
     "category": "Coding",
     "capabilities": [

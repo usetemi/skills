@@ -1,4 +1,4 @@
 interface:
   display_name: "Observability"
-  short_description: "Observability is the evidence needed to explain a production outcome is available"
-  default_prompt: "Use $observability to decide what telemetry to capture, choose operation boundaries, design alerts, or verify a change in production."
+  short_description: "Explainability: the evidence to explain a production outcome exists and can be found"
+  default_prompt: "Use $observability to decide what telemetry to capture, design a log record or alert, choose a telemetry tool, or investigate a production outcome."

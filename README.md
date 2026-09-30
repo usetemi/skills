@@ -41,7 +41,7 @@ Each skill ships as a zip on the [latest release](https://github.com/usetemi/ski
 |---|---|
 | [`ask-clarifying-questions`](skills/ask-clarifying-questions) | Conduct clarification interviews before ambiguous implementation, investigation, or design work, showing a visible prediction with each question, then use the resulting model of how the user decides for implementation-time decisions. |
 | [`software-design`](skills/software-design) | Design judgment for modules, interfaces, and where information lives. |
-| [`observability`](skills/observability) | Design judgment for instrumentation and production feedback: what telemetry to capture, operation boundaries, sampling and aggregation, alerts, and verifying a change in production. |
+| [`observability`](skills/observability) | Opinionated judgment for instrumentation, logging, tracing, alerting, and production feedback: explainability as the north star, structured records, terminal records on every exit path, self-checking counts that record the pass and not just the find, alerts as sinks on events, and choosing telemetry tools by the question they answer. |
 | [`ddd`](skills/ddd) | Write, revise, and consolidate `DOMAIN.md`, a repository's domain model (ubiquitous language, model, rules and invariants), by interviewing the user as the domain expert. |
 | [`fly-io`](skills/fly-io) | Deploy, review, troubleshoot, and design Fly.io apps, Machines, networking, and storage; operate and integrate Sprites persistent environments. |
 | [`node-26`](skills/node-26) | Upgrade and modernize Node.js projects for Node.js 26: Temporal, Map/WeakMap get-or-insert helpers, Iterator.concat, raw crypto key formats, removed APIs, and Current vs LTS rollout guidance. |

@@ -46,7 +46,7 @@ Each skill ships as a zip on the [latest release](https://github.com/usetemi/ski
 | [`fly-io`](skills/fly-io) | Deploy, review, troubleshoot, and design Fly.io apps, Machines, networking, and storage; operate and integrate Sprites persistent environments. |
 | [`node-26`](skills/node-26) | Upgrade and modernize Node.js projects for Node.js 26: Temporal, Map/WeakMap get-or-insert helpers, Iterator.concat, raw crypto key formats, removed APIs, and Current vs LTS rollout guidance. |
 | [`pdf`](skills/pdf) | Fill, redline, and generate PDFs with the right tool for the source. Auto-detects AcroForm vs flat PDFs, handles AES-encrypted government forms, navigates appearance-stream gotchas (`/NeedAppearances`, `/Ch` comboboxes, `/Sig` widgets, multi-page header carry-forward), and verifies output by rendering. |
-| [`tailscale`](skills/tailscale) | Work across the Tailscale platform: connectivity, grants and ACLs, MagicDNS, Serve, Funnel, Services, app connectors, subnet routers, exit nodes, SSH, Kubernetes, containers, CI/CD automation, API/OAuth workflows, and production diagnostics. |
+| [`tailscale`](skills/tailscale) | Deploy, configure, review, troubleshoot, and automate tailnets: grants and ACLs, SSH, Tailnet Lock, PAM, Serve, Funnel, Services, tsidp, subnet routers, exit nodes, app connectors, peer relays, MagicDNS, Kubernetes, containers and tsnet, workload identity federation and OAuth, API and GitOps, Aperture, and production diagnostics. |
 
 Each skill folder is self-contained. `SKILL.md` is the entry point, with `references/` for deeper docs the agent loads on demand.
 

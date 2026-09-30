@@ -49,7 +49,7 @@ A surviving CLI flag is not proof that a feature is available on the plan.
 - [Production diagnostics](references/production-diagnostics.md): read-only
   triage, netcheck, firewall and UDP, health and message IDs, debug and metrics,
   logging, audit and webhooks, outages, device lifecycle, node state encryption,
-  updates, platform notes, and the production review checklist.
+  updates, platform notes, and incident change discipline.
 - [Aperture](references/aperture.md): the AI gateway, client setup, the two
   grant layers, config, MCP and HTTP connectors, and the CLI.
 

@@ -1,61 +1,35 @@
 # Aperture (AI Gateway)
 
-Official docs:
-
-- What is Aperture: https://tailscale.com/docs/aperture/what-is-aperture
-- Configuration reference: https://tailscale.com/docs/aperture/configuration
-- How grants work: https://tailscale.com/docs/aperture/how-grants-work
-- Gateway grants vs tailnet policy grants:
-  https://tailscale.com/docs/aperture/reference/aperture-vs-tailnet-grants
-- Grant model access:
-  https://tailscale.com/docs/aperture/how-to/grant-model-access
-- Grant MCP tool access:
-  https://tailscale.com/docs/aperture/how-to/grant-mcp-tool-access
-- Per-user spending limits:
-  https://tailscale.com/docs/aperture/how-to/set-per-user-spending-limits
-- Built-in connectors:
-  https://tailscale.com/docs/aperture/connectors/built-in-connectors
-- Aperture CLI: https://tailscale.com/docs/aperture/cli
-- GA announcement: https://tailscale.com/blog/aperture-ga
-- Lethal-trifecta pattern: https://tailscale.com/blog/aperture-lethal-trifecta
+Docs: [configuration](https://tailscale.com/docs/aperture/configuration) •
+[how grants work](https://tailscale.com/docs/aperture/how-grants-work) •
+[gateway vs tailnet grants](https://tailscale.com/docs/aperture/reference/aperture-vs-tailnet-grants)
 
 ## What It Is And When To Use It
 
-Aperture is Tailscale's identity-aware AI/LLM gateway. It runs as a device on
-the tailnet, and clients reach it by its MagicDNS name. It:
-
-- reads the caller's identity from the tailnet, so clients hold no provider key
-- injects the provider credential on the way out
-- enforces per-user model access and spend quotas
-- logs requests and runs pre-call guardrail hooks
-- proxies MCP servers and HTTP APIs
-- fronts OpenAI, Anthropic, Gemini, and OpenAI-compatible or self-hosted
-  endpoints
+Aperture is Tailscale's identity-aware AI/LLM gateway, a tailnet device that
+clients reach by MagicDNS name. It reads caller identity from the tailnet (no
+client-side provider keys), injects the provider credential, enforces per-user
+model access and spend quotas, logs requests, runs pre-call guardrail hooks,
+proxies MCP servers and HTTP APIs, and fronts OpenAI, Anthropic, Gemini, and
+OpenAI-compatible or self-hosted endpoints.
 
 Use it when an agent, CI job, or team needs LLM access without distributing
-provider API keys, or when tool access for agents must follow identity and
-audit requirements. Guardrail hooks choose `fail_closed` or `fail_open` for
-the case where the hook service is unreachable; pick `fail_closed` for
-anything that must not bypass the check
-(https://tailscale.com/blog/aperture-audit-AI-agents).
+provider API keys, or when agent tool access must follow identity and audit
+requirements. Guardrail hooks choose `fail_closed` or `fail_open` for when the
+hook service is unreachable; pick `fail_closed` for anything that must not
+bypass the check (https://tailscale.com/blog/aperture-audit-AI-agents).
 
-Callers outside the tailnet connect through the Aperture CLI bridge or
-`ts-unplug` (https://tailscale.com/docs/aperture/what-is-aperture).
+Callers outside the tailnet use the Aperture CLI bridge or `ts-unplug`.
 
 ## Release Stage
 
-- The gateway is generally available (changelog 2026-08-25, launch blog
-  2026-08-26): https://tailscale.com/changelog,
-  https://tailscale.com/blog/aperture-ga.
-- The Aperture CLI (https://tailscale.com/docs/aperture/cli) and the built-in
-  Tailnet connectors
-  (https://tailscale.com/docs/aperture/connectors/built-in-connectors) carry
-  an alpha note in their docs.
-- The 2026-06-16 changelog entry labeled Aperture chat, connectors, and
-  sandboxes alpha. The GA entry does not restate their stage, so check the
-  docs page before relying on it.
-- Do not build durable automation on alpha surfaces' exact syntax without
-  re-reading the docs page.
+The gateway is generally available (changelog 2026-08-25, launch blog
+2026-08-26: https://tailscale.com/blog/aperture-ga). The
+[Aperture CLI](https://tailscale.com/docs/aperture/cli) and the
+[built-in Tailnet connectors](https://tailscale.com/docs/aperture/connectors/built-in-connectors)
+carry an alpha note; the GA entry does not restate the stage of chat,
+connectors, and sandboxes (alpha as of 2026-06-16). Re-read the docs page
+before building durable automation on alpha syntax.
 
 ## Pointing A Client At Aperture
 
@@ -75,8 +49,7 @@ Aperture instance hostname:
 }
 ```
 
-The pattern is the same for other SDKs and tools: base URL to the instance,
-any non-empty placeholder as the key.
+Other SDKs: base URL to the instance, any non-empty placeholder key.
 
 ## Grants: Two Places
 
@@ -97,30 +70,14 @@ Differences that break copy-paste:
 
 A gateway-config grant pasted into the policy file without `dst` is accepted
 but silently has no effect. The reverse fails validation, because `dst` is not
-a valid field in gateway config. Define each grant in exactly one place:
-defining the same grant in both adds no access and makes the effective policy
-harder to reason about.
+a valid field in gateway config. Define each grant in exactly one place;
+defining it in both adds no access and obscures the effective policy.
 
-Gateway-config grant:
-
-```json
-{
-  "src": ["group:ai-users"],
-  "app": {
-    "tailscale.com/cap/aperture": [
-      { "role": "user" },
-      { "models": "anthropic/**" }
-    ]
-  }
-}
-```
-
-Tailnet policy-file form of the same grant adds the destination:
+Gateway-config grant (in the policy file, add `"dst": ["tag:aperture"]`):
 
 ```json
 {
   "src": ["group:ai-users"],
-  "dst": ["tag:aperture"],
   "app": {
     "tailscale.com/cap/aperture": [
       { "role": "user" },
@@ -145,21 +102,16 @@ https://tailscale.com/docs/aperture/how-grants-work):
 - `group:` sources need visible groups: add the `tailscale.com/visible-groups`
   node attribute to the Aperture device
   (https://tailscale.com/docs/aperture/visible-groups).
-- Model patterns are globs: `**`, `anthropic/**`, `*/claude-sonnet*`,
-  `openai/gpt-5.5`.
+- Model patterns are globs: `anthropic/**`, `*/claude-sonnet*`.
 
-This is separate from ordinary network reachability: the tailnet access policy
-still has to let the client reach the gateway device at all. Aperture and the
-agents working through it remain bound by Tailscale's unidirectional
-access-control rules (https://tailscale.com/blog/aperture-ga).
+Grants are separate from network reachability: the tailnet access policy must
+still let the client reach the gateway device.
 
 ## Config Reference Essentials
 
-The gateway config is one JSON document
-(https://tailscale.com/docs/aperture/configuration). Top-level sections:
-`providers`, `grants`, `quotas`, `hooks`, `exporters`, `database`,
-`connectors`, `auto_cost_basis`, `flags`, `mcp`, `temp_grants`, `chat_models`.
-`mcp` and `temp_grants` are deprecated; use `connectors` and `grants`.
+Top-level config sections include `providers`, `grants`, `quotas`, `hooks`,
+`connectors`, `database`, and `flags`. `mcp` and `temp_grants` are deprecated;
+use `connectors` and `grants`.
 
 Providers:
 
@@ -188,14 +140,11 @@ Quotas
   example `{"bucket":"daily:<user>"}` plus a shared pool bucket.
 - Lowering a bucket's capacity caps the existing balance.
 
-Database: an empty retention duration means the Tailscale default of one year.
-
 ## MCP And HTTP Connectors
 
 `connectors.servers.<id>` proxies an MCP server or an HTTP API through
 Aperture so credentials stay in the gateway
-(https://tailscale.com/docs/aperture/how-to/grant-mcp-tool-access,
-https://tailscale.com/docs/aperture/configuration).
+(https://tailscale.com/docs/aperture/how-to/grant-mcp-tool-access).
 
 - `protocol` is `mcp` or `http`.
 - `auth.type` is one of `bearer_token`, `api_key`, `basic`,
@@ -213,14 +162,7 @@ Categories are `tools`, `resources`, `templates` (MCP) and `proxy` (HTTP).
 `*` matches within one segment; `**` matches zero or more segments.
 
 ```json
-{
-  "src": ["group:ai-users"],
-  "app": {
-    "tailscale.com/cap/aperture": [
-      { "connectors": ["github/**", "local/tools/*"] }
-    ]
-  }
-}
+{ "connectors": ["github/**", "local/tools/*"] }
 ```
 
 Gotchas:
@@ -232,14 +174,11 @@ Gotchas:
   paths return 403 access denied. A missing tool is usually a grant problem,
   not a connector outage.
 - A `label:` grant gives the whole connector, including `proxy`. Use FQN
-  patterns when you need tool-level restriction.
+  patterns for tool-level restriction.
 
 ## Built-In Tailscale Connectors
 
-Alpha (see Release Stage). Introduced around GA
-(https://tailscale.com/blog/aperture-ga,
-https://tailscale.com/docs/aperture/connectors/built-in-connectors): connector
-IDs `Tailnet` and `TailnetSSH`.
+Alpha (see Release Stage). Connector IDs `Tailnet` and `TailnetSSH`.
 
 - `Tailnet` has one tool, `provision_node`. The user approves an authorization
   link, then the agent receives a single-use, short-lived auth key bound to the
@@ -247,8 +186,8 @@ IDs `Tailnet` and `TailnetSSH`.
   `custom:createdByAperture` and `custom:createdByAI`.
 - `TailnetSSH` has `list_machines` and `run_command`. It connects as the
   Aperture node, so the tailnet's Tailscale SSH policy decides what it reaches.
-- Access-control rules still bind Aperture and the agents behind it. All agent
-  actions are audit-logged.
+- Tailscale's unidirectional access-control rules still bind Aperture and the
+  agents behind it; all agent actions are audit-logged.
 - Admins set each connector up from the dashboard (My Aperture > Connectors);
   setup does not grant other users access. Grant by ID, for example
   `{ "connectors": ["TailnetSSH/tools/list_machines"] }`. The `system` label
@@ -258,84 +197,53 @@ IDs `Tailnet` and `TailnetSSH`.
 
 Goal: keep any one agent from holding private data, untrusted content, and an
 external communication path at once
-(https://tailscale.com/blog/aperture-lethal-trifecta, 2026-08-06).
+(https://tailscale.com/blog/aperture-lethal-trifecta).
 
 1. Label each connector, for example `hasCustomerData` and `noCustomerData`.
 2. Mark devices (sandboxes) that have internet egress with a custom device
    attribute, for example `custom:hasEgress`, and define postures over it.
-   Device provisioning with OAuth apps can apply the attribute at creation so
+   Provisioning devices with OAuth apps can set the attribute at creation so
    the user cannot change it.
 3. In the tailnet policy file, use `srcPosture` to give egress-capable devices
-   only the `noCustomerData` label and egress-free devices both labels:
+   only `noCustomerData` and egress-free devices both labels:
 
 ```json
-"postures": {
-  "posture:hasEgress": ["custom:hasEgress == true"],
-  "posture:noEgress": ["custom:hasEgress == false"]
-},
-"grants": [
-  {
-    "src": ["autogroup:member"],
-    "srcPosture": ["posture:noEgress"],
-    "dst": ["tag:aperture"],
-    "app": {
-      "tailscale.com/cap/aperture": [
-        { "connectors": ["label:noCustomerData", "label:hasCustomerData"] }
-      ]
-    }
-  },
-  {
-    "src": ["autogroup:member"],
-    "srcPosture": ["posture:hasEgress"],
-    "dst": ["tag:aperture"],
-    "app": {
-      "tailscale.com/cap/aperture": [
-        { "connectors": ["label:noCustomerData"] }
-      ]
-    }
-  }
-]
+"postures": { "posture:hasEgress": ["custom:hasEgress == true"],
+  "posture:noEgress": ["custom:hasEgress == false"] },
+"grants": [{
+  "src": ["autogroup:member"],
+  "srcPosture": ["posture:noEgress"],
+  "dst": ["tag:aperture"],
+  "app": { "tailscale.com/cap/aperture": [
+    { "connectors": ["label:noCustomerData", "label:hasCustomerData"] } ] }
+}]
 ```
+
+Add a second grant with `posture:hasEgress` and only `label:noCustomerData`.
 
 Why it holds: the grants live in the tailnet policy, outside the gateway, and
 Aperture keeps the LLM and MCP credentials outside the agent harness. Stated
 threat model: an agent driven by an outside actor, not a malicious insider
 such as a Tailscale admin.
 
-For posture syntax and custom attributes, see
+Posture syntax and custom attributes:
 [policy-security.md](policy-security.md#device-posture).
 
 ## Aperture CLI (Alpha)
 
-Announced 2026-05-20; alpha
-(https://tailscale.com/blog/aperture-cli-AI-experimentation,
-https://tailscale.com/changelog).
+Announced 2026-05-20
+(https://tailscale.com/blog/aperture-cli-AI-experimentation).
 
 ```bash
 go install github.com/tailscale/aperture-cli/cmd/aperture@latest
 aperture
 ```
 
-Requires a recent Go toolchain; check the repository README for the minimum.
+Requires a recent Go toolchain (see the repository README for the minimum).
 
 - Launches and configures coding agents against an Aperture instance: Claude
-  Code, Codex, OpenCode, Gemini CLI, GitHub Copilot CLI, and others such as
-  Droid and Pi.
-- Bridge mode connects to the tailnet containing the Aperture instance
-  without the Tailscale client, and can run alongside an existing VPN. Use it
-  for hosts that cannot or should not join the tailnet.
-- Because it is alpha, prefer the plain base-URL configuration above for
-  anything that must keep working across releases.
-
-## Quick Diagnosis
-
-| Symptom | First check |
-| --- | --- |
-| HTTP 403 from the gateway | No `role` grant (`user` or `admin`) for the caller |
-| Connects, but no models or tools listed | Deny-by-default: no matching grant, or grant in the wrong location |
-| HTTP 404 from the gateway | Role granted, but no `models` grant matches the model, or no provider serves it |
-| Policy-file grant has no effect | Missing `dst` (Aperture never receives the capability) |
-| Upstream HTTP 405 | Provider `baseurl` includes `/v1` |
-| HTTP 429 with `Retry-After` | Quota bucket exhausted; check every quota on the matching grant |
-| Subscription login rejected | Provider needs `auth_mode: "passthrough"` |
-| Tool "unknown" or proxy 403 | Grant pattern missing, malformed (silently dropped), or wrong category |
+  Code, Codex, OpenCode, Gemini CLI, GitHub Copilot CLI, and others.
+- Bridge mode reaches the tailnet without the Tailscale client and can run
+  alongside an existing VPN; use it for hosts that cannot or should not join.
+- Prefer the plain base-URL configuration for anything that must keep working
+  across releases.

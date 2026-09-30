@@ -39,7 +39,7 @@ Each skill ships as a zip on the [latest release](https://github.com/usetemi/ski
 
 | Skill | What it does |
 |---|---|
-| [`ask-clarifying-questions`](skills/ask-clarifying-questions) | Conduct clarification interviews before ambiguous implementation, investigation, or design work, showing each question before its visible prediction. |
+| [`ask-clarifying-questions`](skills/ask-clarifying-questions) | Conduct clarification interviews before ambiguous implementation, investigation, or design work, showing a visible prediction with each question, then use the resulting model of how the user decides for implementation-time decisions. |
 | [`software-design`](skills/software-design) | Design judgment for modules, interfaces, and where information lives. |
 | [`observability`](skills/observability) | Design judgment for instrumentation and production feedback: what telemetry to capture, operation boundaries, sampling and aggregation, alerts, and verifying a change in production. |
 | [`ddd`](skills/ddd) | Write, revise, and consolidate `DOMAIN.md`, a repository's domain model (ubiquitous language, model, rules and invariants), by interviewing the user as the domain expert. |

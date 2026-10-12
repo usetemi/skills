@@ -81,10 +81,11 @@ An instruction to stop asking, use your judgment, or just start ends the intervi
 
 ### 6. State how the user decides
 
-When you stop, write a short visible block with two parts:
+When you stop, write a short visible block with three parts:
 
 - **Decisions:** the load-bearing answers, in 1-3 sentences.
 - **How you decide:** a bullet list. Each bullet names a tradeoff axis, the side the user took, and the reason inferred from their answers, so the user can correct a wrong inference. Include every divergence between prediction and recommendation. Include the boundaries that always come back to the user regardless of the model: anything a standing rule reserves for them, and anything the user reserved during the interview.
+- **Goal:** the block's last line, a plain `Goal: <one line>` the user can pass to `/goal`. State the outcome at the furthest delivery stage the repository supports and the evidence that proves it: live in production, verified with named production evidence, where the repository deploys; merged and released or installed where it does not. Keep it high-level: name the outcome and its proof, not the process steps. End it with an autonomy clause: work autonomously, pausing only for questions the model of the user cannot answer or for reserved boundaries.
 
 When an inferred posture conflicts with an ambient rule (for example, `AGENTS.md` prefers the simplest solution and the user's answers on this task favor flexibility), the interview governs for this task, and the block names the rule it overrides.
 

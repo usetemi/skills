@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Open-source agent skills from Temi (usetemi.com)",
-    "version": "0.6.0"
+    "version": "0.7.0"
   },
   "plugins": [
     {
@@ -19,6 +19,7 @@
         "./skills/observability",
         "./skills/ddd",
         "./skills/fly-io",
+        "./skills/sprite-apps",
         "./skills/node-26",
         "./skills/pdf",
         "./skills/tailscale"

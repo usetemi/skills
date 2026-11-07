@@ -1,6 +1,6 @@
 ---
 name: fly-io
-description: Deploy, configure, review, troubleshoot, and design Fly.io apps, Machines, networking, and storage, or operate and integrate Sprites persistent execution environments. Use for Fly infrastructure, flyctl/fly.toml, and Sprites CLI/API tasks.
+description: Deploy, configure, review, troubleshoot, and design Fly.io apps, Machines, networking, and storage, or operate and integrate Sprites persistent execution environments. Use for Fly infrastructure, flyctl/fly.toml, the Fly MCP server (mcp.fly.io), and Sprites CLI/API tasks.
 ---
 
 # Fly.io and Sprites
@@ -30,6 +30,8 @@ resources merely to inspect them.
   backup/restore review, extensions, and cost checks.
 - [Sprites](references/sprites.md): product selection, authentication, exec,
   files, persistence, checkpoints, services, networking, and API/SDK contracts.
+- [Fly MCP](references/fly-mcp.md): setting up and signing in to mcp.fly.io,
+  scoping its grant, and using its tools safely.
 
 Use Fly Launch for conventional image-based apps; use Machines directly when
 per-instance lifecycle, image, or sizing control is required. Evaluate Sprites

@@ -40,6 +40,7 @@ Each skill ships as a zip on the [latest release](https://github.com/usetemi/ski
 | Skill | What it does |
 |---|---|
 | [`ask-clarifying-questions`](skills/ask-clarifying-questions) | Conduct clarification interviews before ambiguous implementation, investigation, or design work, showing a visible prediction with each question, then use the resulting model of how the user decides for implementation-time decisions. |
+| [`call-me-maybe`](skills/call-me-maybe) | A reusable voice layer for AI agents: give an agent you normally type to (a personal assistant, a coworker agent, a coding agent) the ability to call the user by phone for a live spoken conversation, on Cartesia Managed Agents, with webhook tools and a simulated-caller test path. Continually a prototype. |
 | [`software-design`](skills/software-design) | Design judgment for modules, interfaces, and where information lives. |
 | [`observability`](skills/observability) | Opinionated judgment for instrumentation, logging, tracing, alerting, and production feedback: explainability as the goal, structured records with bound context, one terminal record on every exit path, severity as an alert decision, and telemetry tools chosen by the question they answer. |
 | [`ddd`](skills/ddd) | Write, revise, and consolidate `DOMAIN.md`, a repository's domain model (ubiquitous language, model, rules and invariants), by interviewing the user as the domain expert. |

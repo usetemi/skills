@@ -64,6 +64,7 @@ Keep the server dependency-free (stdlib only) unless you have a reason; state as
 - Key per-call state by the `system__conversation_id` dynamic variable: declare a `conversation_id` string property with `"dynamic_variable": "system__conversation_id"` in the tool's request schema and have the server key its state files by it.
 - **Dynamic-variable parameters cannot be `required`** — the API rejects the tool if they are. Put them in `properties`, leave them out of `required`.
 - Long work never runs inside a tool call. The tool acknowledges in under a second and the work runs in a background thread; a second fetch tool returns the result when ready (or a "still thinking / proceed without it" message). Retry transport errors up to 3 times — a single gateway stall otherwise silently loses the result.
+- **Silence during a slow tool call reads as a hang.** If a fetch can take more than a few seconds (an advisor consult can take ~20), don't leave the caller in silence: use `pre_tool_speech` or prompt the agent to say a short filler when it starts waiting, and to check in every ~5 seconds ("still thinking, give me a few more seconds") until the result lands. Callers start saying "hello?" after ~10 seconds of silence, and the agent must never let that check-in read as a cue to abandon the pending result and resume without it. (Cartesia product interview, 2026-11-17.)
 
 ### 3. Agent
 
@@ -118,6 +119,9 @@ There is **no tool-test API** (`/v1/agents/tools/{id}/test` 404s in every shape 
 ## Writing instructions for a voice agent
 
 - Write for the ear: short spoken sentences, no lists, no formatting, nothing that only makes sense on a screen.
+- **One to two sentences per turn, with human disfluencies** (ums, hmms) where they fit. Sonic adheres well to speaking-style instructions, and this is the single biggest naturalness lever. A verbose self-introduction ("I'm an assistant calling on behalf of...") is the top hangup cause on outbound calls to busy people. (Cartesia product interview, 2026-11-17.)
+- **Outbound task calls: the first 30 seconds decide.** One objective, stated immediately; outside IVR navigation and hold time, the conversation itself should run about 60 seconds. No upfront AI disclosure is required; if the callee asks whether the agent is an AI, it answers yes honestly.
+- **Hard vocabulary goes in dictionaries, not hopes.** Drug names and other hard-to-say words belong in a Cartesia pronunciation dictionary (phoneme entries; Cartesia's pronunciation guide plus a coding agent produces them), and hard-to-hear words belong in `audio.input.keyterms` so the ASR (Ink) primes for them.
 - State the conversation norms explicitly: don't repeat back what the caller said, don't summarize unless asked, answer the question asked then stop and let them steer, offer one follow-up direction at a time.
 - Give the agent its knowledge in the prompt for a one-off agent (a few thousand words is fine); for anything that changes, prefer a fetch tool over prompt stuffing.
 - Tell it what to do at the edges: unsure → say so and reason aloud; goodbye → say goodbye warmly and let the callee end the call; silence → wait (skip_turn), don't narrate.
@@ -131,6 +135,17 @@ There is **no tool-test API** (`/v1/agents/tools/{id}/test` 404s in every shape 
 - Voicemail messages that explain the whole product: if the call lands on voicemail you get one short message, ~15 seconds. Anything longer gets cut off and sounds broken.
 - Letting the agent end calls. Disable `end_call` unless the use case genuinely requires the agent to hang up (e.g. outbound screening with a hard script), and if you enable it, say why in the instructions.
 - Testing against the user's real phone "just once to check." The simulated caller exists precisely so this never happens during development.
+- Going silent while a slow tool runs (see step 2): the caller assumes the call died, and an agent that "resumes" without the pending result loses the whole point of the consult.
+- Calls going silent around 15–20 minutes in, unrecoverable even when the caller checks in: observed in production brainstorming calls (2026-11), cause unknown. Cartesia (Samith Venkatesh, 2026-11-17) knows of no call-duration limit and asked for call logs. Capture the call log whenever it happens and send it to Cartesia before inventing a workaround.
+
+## Learnings from the Cartesia product interview (2026-11-17)
+
+From a user-interview call with Samith Venkatesh, Product Lead for Voice Agents at Cartesia. Full notes: the caller's workspace, `cartesia-samith-2026-11-17/LEARNINGS.md`.
+
+- The pattern above matches how Cartesia's own team uses the product, including the inverse direction: an agent that *places* outbound task calls (scheduling, checking) on the user's behalf, not only agents the user talks to.
+- The pharmacy pickup-check shape is standard among Cartesia's pharmacy customers: per-call facts (patient name, medication) injected as dynamic variables, data via knowledge bases and webhook/client-side tools, and a gate sequence (identify, state the request, then answer name/DOB, then medication). The failure mode to design against is the opening: verbose or unnatural openings get hung up on before any gate is reached.
+- Inbound is the same machinery with the direction flipped: assign a number and the user can call in to the agent. Worth offering when "you call me" scheduling is the friction.
+- Cartesia believes caller speech interrupting a tool call is largely solved on their side; if it recurs, they want the call log, not a bug report from memory.
 
 ## Reference implementation
 

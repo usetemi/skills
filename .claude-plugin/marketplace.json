@@ -20,8 +20,6 @@
         "./skills/ddd",
         "./skills/fly-io",
         "./skills/sprite-apps",
-        "./skills/node-26",
-        "./skills/pdf",
         "./skills/tailscale"
       ]
     }
